@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 로컬 서버(평문 HTTP) 접속은 debug 빌드에서만 허용 (pick-me-be docs/LOCAL_DEV.md 2장) -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>

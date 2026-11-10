@@ -1,0 +1,4 @@
+<resources>
+    <!-- Figma V01 캡처 기준 배경색. 토큰 정리는 화면 구현 계획에서 한다 -->
+    <color name="pickme_background">#FF1C1D21</color>
+</resources>
