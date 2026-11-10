@@ -11,7 +11,9 @@ import com.pickmedt.car.data.remote.RemoteDevTools
 import com.pickmedt.car.data.remote.RemoteOrderRepository
 import com.pickmedt.car.data.remote.RemoteSession
 import com.pickmedt.car.data.settings.UserSettingsRepository
+import com.pickmedt.car.demo.DemoCommands
 import com.pickmedt.car.demo.DemoController
+import com.pickmedt.car.demo.ServerDemoActions
 import com.pickmedt.car.platform.drive.DriveSignalSource
 import com.pickmedt.car.platform.drive.fake.FakeDriveSignalSource
 import com.pickmedt.car.platform.navi.EtaSource
@@ -35,6 +37,9 @@ class AppContainer(
     carNavi: PleosNavi? = null,
     server: ServerConfig? = null,
     val clock: Clock = Clock.System,
+    /** 시연 컨트롤을 처음에 보일지 (앱이 저장해 둔 값) */
+    demoPanelVisible: Boolean = true,
+    onDemoPanelVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     /** 실서버 주소와 이 기기의 ID */
     data class ServerConfig(val baseUrl: String, val deviceId: String)
@@ -61,8 +66,8 @@ class AppContainer(
     } ?: FakeOrderRepository(fakeServer)
     val catalog: CatalogRepository = session?.let { RemoteCatalog(it) } ?: fakeCatalog
 
-    /** 실서버 개발 API (매장 단계 넘기기·초기화). 가짜 서버면 null */
-    val serverDev: RemoteDevTools? = session?.let { RemoteDevTools(it) }
+    /** 실서버 시연 조작 (매장 단계 넘기기·초기화). 가짜 서버면 null */
+    val serverDemo: ServerDemoActions? = session?.let { RemoteServerDemo(RemoteDevTools(it), orderRepository, appScope) }
     val routeSource: RouteSource = carNavi ?: scriptedRoute
     private val etaSource: EtaSource = carNavi?.let { NaviSeededEtaSource(it, scriptedEta) } ?: scriptedEta
 
@@ -80,5 +85,10 @@ class AppContainer(
         pauseEtaReports = etaReporter::stop,
         resumeEtaReports = etaReporter::start,
         scope = appScope,
+        panelInitiallyVisible = demoPanelVisible,
+        onPanelVisibilityChanged = onDemoPanelVisibilityChanged,
     )
+
+    /** 터미널 시연 명령 (scripts/demo.sh). debug 빌드의 수신기가 부른다 */
+    val demoCommands = DemoCommands(demo, serverDemo)
 }

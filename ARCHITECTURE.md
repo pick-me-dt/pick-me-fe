@@ -38,14 +38,22 @@ app/src/main/kotlin/com/pickmedt/car/
    └─ text/      조사·시각·금액 문구
 
 app/src/main/res/  drawable(Figma SVG를 변환한 벡터), font(Asta Sans)
-app/src/debug/     debug 빌드 전용 설정 (로컬 서버 평문 HTTP 허용)
+app/src/debug/     debug 빌드 전용: 로컬 서버 평문 HTTP 허용, 터미널 시연 명령 수신기(scripts/demo.sh → adb, DUMP 권한으로 adb만 허용)
 app/src/test/      단위 테스트. main과 같은 패키지 구조, 공용 도구는 testing/, 화면 스크린샷은 screenshot/
 design/            Figma SVG 원본(figma-assets/), 글꼴 라이선스(licenses/)
+scripts/demo.sh    시연 명령을 터미널에서 보내는 스크립트 (영상 촬영용)
 ```
 
 ### 크기 단위
 
-화면 수치는 Figma 앱 영역(840×1184) 값을 그대로 `designDp`·`designSp`로 씁니다(예: `40.designDp`). `ProvideDesignScale`은 `min(창 폭÷840, 창 높이÷1184)` 비율로 Figma 영역을 가장 크게 넣고 가운데 둡니다. Pleos 작업 영역은 전체일 때 1682×1210(가로), 분할일 때 840×1210(세로)입니다 ([게이트 결과](docs/plans/2026-11-10-emulator-gates.md)).
+화면 수치는 Figma 앱 영역(840×1184) 값을 그대로 `designDp`·`designSp`로 씁니다(예: `40.designDp`). `ProvideDesignScale`은 창에 맞는 비율로 앱 영역을 가장 크게 넣고 가운데 둡니다.
+
+Pleos는 앱 영역을 세로 840×1184와 가로 1700×1184 두 가지로 정해 둡니다(Figma 「Form factors」 2:19562). 에뮬레이터에서는 전체 1682×1210, 분할 840×1210이었습니다([게이트 결과](docs/plans/2026-11-10-emulator-gates.md)). Figma에는 세로 화면만 있어서, 가로는 아래처럼 정했습니다(`ui/component/ScreenFrame.kt`).
+
+- **배치**: 세로 화면 두 칸(840 + 간격 20 + 840)을 나란히 놓습니다.
+- **왼쪽 칸 (운전석 쪽)**: 제목 줄·본문·버튼. 넓은 화면 반대편까지 손을 뻗지 않게 누르는 요소는 모두 여기에 둡니다.
+- **오른쪽 칸**: 보기만 하는 요소. 홈·도착 화면은 커피 그림, 카드 화면은 주문 카드를 둡니다. 문구만 있는 화면은 비워 둡니다.
+- **판단 기준**: 창의 폭÷높이가 1.3 이상이면 가로 배치로 봅니다.
 
 ### 화면 확인
 

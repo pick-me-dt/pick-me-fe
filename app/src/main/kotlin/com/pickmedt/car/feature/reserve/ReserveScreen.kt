@@ -11,7 +11,9 @@ import com.pickmedt.car.ui.component.PleosButtonStyle
 import com.pickmedt.car.ui.component.ScreenFrame
 import com.pickmedt.car.ui.text.Formats
 import com.pickmedt.car.ui.theme.PickmeColors
+import com.pickmedt.car.ui.theme.LocalScreenLayout
 import com.pickmedt.car.ui.theme.PickmeType
+import com.pickmedt.car.ui.theme.ScreenLayout
 
 data class ReserveUiState(
     val storeLine: String,
@@ -48,10 +50,11 @@ fun ReserveScreen(
                 onSubmit,
             )
         },
+        aside = { OrderSummaryCard(state.storeLine, state.menuLine, state.detailLine) },
     ) {
         Text("예약 확인", style = PickmeType.bold26x145, color = PickmeColors.TextSecondary)
         Text("주문 내용을\n확인해 주세요", style = PickmeType.headline, color = PickmeColors.TextPrimary)
-        OrderSummaryCard(state.storeLine, state.menuLine, state.detailLine)
+        if (LocalScreenLayout.current == ScreenLayout.Portrait) OrderSummaryCard(state.storeLine, state.menuLine, state.detailLine)
         Text("기존 DT 차로에서 수령해요. 앞차에 따라 대기할 수 있어요.", style = PickmeType.regular28x145, color = PickmeColors.TextSecondary)
         Text("결제 예정 ${state.total}\n매장이 수락하면 예약이 완료돼요.", style = PickmeType.regular24x145, color = PickmeColors.TextSecondary)
     }

@@ -1,5 +1,9 @@
 package com.pickmedt.car.feature.progress
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,10 +23,13 @@ import com.pickmedt.car.feature.progress.ArrivalHeadline.PickupNumber
 import com.pickmedt.car.ui.component.CroppedImage
 import com.pickmedt.car.ui.component.PleosButton
 import com.pickmedt.car.ui.component.ScreenFrame
+import com.pickmedt.car.ui.component.StatusCardAside
 import com.pickmedt.car.ui.component.StatusCardBody
 import com.pickmedt.car.ui.component.StepIndicator
 import com.pickmedt.car.ui.theme.PickmeColors
+import com.pickmedt.car.ui.theme.LocalScreenLayout
 import com.pickmedt.car.ui.theme.PickmeType
+import com.pickmedt.car.ui.theme.ScreenLayout
 import com.pickmedt.car.ui.theme.designDp
 import com.pickmedt.car.ui.theme.designSp
 
@@ -39,6 +46,19 @@ fun ProgressScreen(
             state.actions.forEach { action ->
                 PleosButton(action.label, action.style, onClick = { onAction(action.kind) })
             }
+        },
+        // 가로 배치: 도착 화면은 커피 그림을, 카드 화면은 주문 카드를 오른쪽 칸에
+        aside = if (state is ProgressUiState.Arrival) {
+            {
+                Image(
+                    painter = painterResource(R.drawable.img_coffee_visual),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.size(632.designDp, 297.designDp),
+                )
+            }
+        } else {
+            { StatusCardAside((state as ProgressUiState.Card).card) }
         },
     ) {
         when (state) {
@@ -98,12 +118,14 @@ private fun ArrivalBody(state: ProgressUiState.Arrival) {
                 }
             }
         }
-        CroppedImage(
-            drawable = R.drawable.img_coffee_visual,
-            boxWidth = 260, boxHeight = 280,
-            imageWidth = 632.4f, imageHeight = 297.5f,
-            offsetX = -185, offsetY = -4,
-        )
+        if (LocalScreenLayout.current == ScreenLayout.Portrait) {
+            CroppedImage(
+                drawable = R.drawable.img_coffee_visual,
+                boxWidth = 260, boxHeight = 280,
+                imageWidth = 632.4f, imageHeight = 297.5f,
+                offsetX = -185, offsetY = -4,
+            )
+        }
     }
     StepIndicator(current = state.step)
     Column(verticalArrangement = Arrangement.spacedBy(10.designDp)) {

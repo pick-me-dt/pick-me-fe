@@ -18,7 +18,9 @@ import com.pickmedt.car.ui.component.PleosButtonStyle
 import com.pickmedt.car.ui.component.ScreenFrame
 import com.pickmedt.car.ui.text.Formats
 import com.pickmedt.car.ui.theme.PickmeColors
+import com.pickmedt.car.ui.theme.LocalScreenLayout
 import com.pickmedt.car.ui.theme.PickmeType
+import com.pickmedt.car.ui.theme.ScreenLayout
 import com.pickmedt.car.ui.theme.designDp
 
 data class HomeUiState(
@@ -45,6 +47,15 @@ fun HomeScreen(
     onReserve: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hero: @Composable () -> Unit = {
+        Image(
+            painter = painterResource(R.drawable.img_coffee_hero),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.size(760.designDp, 350.designDp),
+        )
+    }
+    val landscape = LocalScreenLayout.current == ScreenLayout.Landscape
     ScreenFrame(
         modifier = modifier,
         actions = {
@@ -55,14 +66,11 @@ fun HomeScreen(
                 onReserve,
             )
         },
+        // 가로 배치: 커피 그림을 오른쪽 칸으로
+        aside = { hero() },
     ) {
         Text("가는 길에,\n평소 그 한 잔.", style = PickmeType.hero, color = PickmeColors.TextPrimary)
-        Image(
-            painter = painterResource(R.drawable.img_coffee_hero),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.size(760.designDp, 350.designDp),
-        )
+        if (!landscape) hero()
         Column(verticalArrangement = Arrangement.spacedBy(8.designDp)) {
             Text(state.menuName, style = PickmeType.bold36x140, color = PickmeColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(state.info, style = PickmeType.regular26x140, color = PickmeColors.TextSecondary, maxLines = 1)

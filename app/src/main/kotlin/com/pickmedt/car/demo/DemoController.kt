@@ -10,6 +10,12 @@ import com.pickmedt.car.platform.navi.pleos.PleosNavi
 import com.pickmedt.car.platform.navi.scripted.ScriptedEtaSource
 import com.pickmedt.car.platform.navi.scripted.ScriptedRouteSource
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.Duration
 
@@ -33,7 +39,30 @@ class DemoController(
     private val pauseEtaReports: () -> Unit,
     private val resumeEtaReports: () -> Unit,
     private val scope: CoroutineScope,
+    /** 시연 컨트롤을 처음에 보일지. 앱이 저장해 둔 값을 넘긴다 */
+    panelInitiallyVisible: Boolean = true,
+    /** 보이기·숨기기를 바꾸면 앱이 저장한다 */
+    private val onPanelVisibilityChanged: (Boolean) -> Unit = {},
 ) {
+    private val ui = MutableSharedFlow<DemoUiEvent>(extraBufferCapacity = 8)
+
+    /** 화면 흐름을 바꾸는 조작 (앱 다시 시작·설정 열기·홈 다시 불러오기). AppRoot가 처리한다 */
+    val uiEvents: SharedFlow<DemoUiEvent> = ui.asSharedFlow()
+
+    private val panel = MutableStateFlow(panelInitiallyVisible)
+
+    /** 시연 컨트롤을 화면에 보일지. 영상 촬영 때는 숨기고 터미널 명령(scripts/demo.sh)으로 조작한다 */
+    val panelVisible: StateFlow<Boolean> = panel.asStateFlow()
+
+    fun requestUi(event: DemoUiEvent) {
+        ui.tryEmit(event)
+    }
+
+    fun setPanelVisible(visible: Boolean) {
+        panel.value = visible
+        onPanelVisibilityChanged(visible)
+    }
+
     fun accept() = runCatching { server.accept() }
 
     /** V03-R. Figma 예시 사유 "주문량 증가" */

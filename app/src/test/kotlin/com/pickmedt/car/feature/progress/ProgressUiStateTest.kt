@@ -213,6 +213,28 @@ class ProgressUiStateTest {
         assertEquals(ProgressVariant.WAITING_DELAYED, presenter.present(delayed, DriveContext.DRIVING, now).variant)
     }
 
+    @Test fun `도착이 빨라지면 빨라진 계획을 새 기준으로 삼는다`() {
+        val presenter = ProgressPresenter()
+        val order = testOrder(OrderStage.WAITING_TO_PREPARE)
+        // 내비 첫 값 20분 → 시연 ETA 6분(빨라짐) → 정체 +4분
+        presenter.present(order.copy(timing = testTiming("08:22")), DriveContext.DRIVING, now)
+        assertEquals(ProgressVariant.WAITING, presenter.present(order.copy(timing = testTiming("08:08")), DriveContext.DRIVING, now).variant)
+        val delayed = presenter.present(order.copy(timing = testTiming("08:12")), DriveContext.DRIVING, now)
+        assertEquals(ProgressVariant.WAITING_DELAYED, delayed.variant)
+        assertEquals("08:12 도착 예정 · 기존 08:08", ((delayed as ProgressUiState.Arrival).headline as ArrivalHeadline.Eta).line)
+    }
+
+    @Test fun `조금씩 늦어지면 처음 기준과 비교해 쌓인 지연을 알린다`() {
+        val presenter = ProgressPresenter()
+        val order = testOrder(OrderStage.WAITING_TO_PREPARE)
+        presenter.present(order.copy(timing = testTiming("08:08")), DriveContext.DRIVING, now)
+        val step = testTiming("08:08").let { t ->
+            t.copy(entranceEtaAt = t.entranceEtaAt.plusSeconds(40), expectedPickupAt = t.expectedPickupAt.plusSeconds(40), recommendedStartAt = t.recommendedStartAt.plusSeconds(40))
+        }
+        assertEquals(ProgressVariant.WAITING, presenter.present(order.copy(timing = step), DriveContext.DRIVING, now).variant)
+        assertEquals(ProgressVariant.WAITING_DELAYED, presenter.present(order.copy(timing = testTiming("08:09")), DriveContext.DRIVING, now).variant)
+    }
+
     @Test fun `주문이 바뀌면 기준을 새로 잡는다`() {
         val presenter = ProgressPresenter()
         presenter.present(testOrder(OrderStage.WAITING_TO_PREPARE, id = "a").copy(timing = testTiming("08:08")), DriveContext.DRIVING, now)

@@ -11,7 +11,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.pickmedt.car.ui.theme.PickmeColors
+import com.pickmedt.car.ui.theme.LocalScreenLayout
 import com.pickmedt.car.ui.theme.PickmeType
+import com.pickmedt.car.ui.theme.ScreenLayout
 import com.pickmedt.car.ui.theme.designDp
 
 /** 주문 요약 카드 세 줄 */
@@ -36,9 +38,16 @@ fun StatusCardBody(
     Text(eyebrow, style = PickmeType.bold26x145, color = PickmeColors.TextSecondary)
     Text(title, style = PickmeType.headline, color = PickmeColors.TextPrimary)
     if (info != null) InfoBox(info)
-    OrderSummaryCard(card.title, card.menu, card.detail)
+    // 가로 배치에서는 주문 카드를 오른쪽 칸에 둔다 ([StatusCardAside])
+    if (LocalScreenLayout.current == ScreenLayout.Portrait) OrderSummaryCard(card.title, card.menu, card.detail)
     Text(lead, style = PickmeType.regular28x145, color = PickmeColors.TextSecondary)
     if (note != null) Text(note, style = PickmeType.regular24x145, color = PickmeColors.TextSecondary)
+}
+
+/** 가로 배치의 오른쪽 칸 주문 카드 */
+@Composable
+fun StatusCardAside(card: SummaryCardText) {
+    OrderSummaryCard(card.title, card.menu, card.detail)
 }
 
 /** 760×154, 배경 #131417, 모서리 20, 여백 24, 간격 10 */

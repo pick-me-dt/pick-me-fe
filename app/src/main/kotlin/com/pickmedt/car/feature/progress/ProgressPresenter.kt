@@ -23,7 +23,8 @@ import java.time.Instant
 
 /**
  * 진행 화면 상태를 만들면서 주문마다 두 가지를 기억한다.
- * - 처음 받은 제조 타이밍: 제조 전 지연(V05-A) 판단 기준. 앱을 다시 시작하면 지금 값으로 바뀐다
+ * - 제조 전 지연(V05-A) 판단 기준 타이밍: 처음 받은 값. 도착이 빨라지면 빨라진 계획으로 바꾼다
+ *   (빨라진 것은 지연이 아니므로, 이후 늦어지는 만큼을 「기존」 시각과 비교해 알린다). 앱을 다시 시작하면 지금 값으로 바뀐다
  * - 취소 거절(V06-E)을 사용자가 확인했는지
  */
 class ProgressPresenter {
@@ -37,7 +38,11 @@ class ProgressPresenter {
             baseline = null
             cancelRejectionSeen = false
         }
-        if (baseline == null) baseline = order.timing
+        val timing = order.timing
+        val current = baseline
+        if (current == null || (timing != null && timing.recommendedStartAt.isBefore(current.recommendedStartAt))) {
+            baseline = timing
+        }
         // 새 취소 요청이 들어가면 거절 확인 여부를 초기화한다
         if (order.stage == OrderStage.CANCEL_REQUESTED) cancelRejectionSeen = false
         return toProgressUiState(order, drive, now, baseline, cancelRejectionSeen)

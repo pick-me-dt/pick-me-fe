@@ -27,7 +27,21 @@ class PickmeApplication : Application() {
         // 빌드 옵션 -Ppickme.serverUrl이 있으면 실서버에 붙는다
         val server = BuildConfig.SERVER_URL.takeIf { it.isNotBlank() }
             ?.let { AppContainer.ServerConfig(it, DeviceIdentity.id(this)) }
-        container = AppContainer(appScope, PrefsUserSettings(this), carDrive, carNavi, server)
+        // 시연 컨트롤 보이기·숨기기는 앱을 다시 켜도 유지한다 (영상 촬영 때 숨김)
+        val demoPrefs = getSharedPreferences("pickme_demo", MODE_PRIVATE)
+        container = AppContainer(
+            appScope = appScope,
+            userSettings = PrefsUserSettings(this),
+            carDrive = carDrive,
+            carNavi = carNavi,
+            server = server,
+            demoPanelVisible = demoPrefs.getBoolean(KEY_PANEL_VISIBLE, true),
+            onDemoPanelVisibilityChanged = { demoPrefs.edit().putBoolean(KEY_PANEL_VISIBLE, it).apply() },
+        )
         container.etaReporter.start()
+    }
+
+    private companion object {
+        const val KEY_PANEL_VISIBLE = "panel_visible"
     }
 }

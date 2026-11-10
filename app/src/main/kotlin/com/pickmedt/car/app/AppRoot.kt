@@ -1,13 +1,9 @@
 package com.pickmedt.car.app
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickmedt.car.core.model.DriveContext
 import com.pickmedt.car.core.model.Order
@@ -27,9 +22,8 @@ import com.pickmedt.car.core.model.OrderStage
 import com.pickmedt.car.core.rule.resolveDriveContext
 import com.pickmedt.car.data.order.OrderRepository
 import com.pickmedt.car.data.settings.UserSettingsRepository
-import com.pickmedt.car.data.remote.RemoteDevTools
-import com.pickmedt.car.demo.DemoAction
 import com.pickmedt.car.demo.DemoPanel
+import com.pickmedt.car.demo.DemoUiEvent
 import com.pickmedt.car.feature.home.HomeAction
 import com.pickmedt.car.feature.home.HomeController
 import com.pickmedt.car.feature.home.HomeScreen
@@ -70,13 +64,9 @@ import com.pickmedt.car.feature.settings.SettingsStep
 import com.pickmedt.car.feature.settings.legalMessage
 import com.pickmedt.car.feature.settings.settingsMessage
 import com.pickmedt.car.ui.component.MessageScreen
-import com.pickmedt.car.ui.theme.DESIGN_HEIGHT
-import com.pickmedt.car.ui.theme.DESIGN_WIDTH
 import com.pickmedt.car.ui.theme.PickmeColors
 import com.pickmedt.car.ui.theme.PickmeTheme
 import com.pickmedt.car.ui.theme.ProvideDesignScale
-import android.util.Log
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -168,73 +158,42 @@ fun AppRoot(container: AppContainer) {
             },
             onReloadHome = { scope.launch { home.load() } },
             modifier = modifier,
-            serverActions = container.serverDev?.let { dev ->
-                serverDemoActions(dev, container.orderRepository, scope, onReloadHome = { home.load() })
+            serverActions = container.serverDemo?.let { server ->
+                listOf(
+                    "다음 단계" to server::next,
+                    "새로고침" to server::refresh,
+                    "서버 초기화" to { server.reset().onSuccess { scope.launch { home.load() } } },
+                )
             },
         )
     }
 
+    // 터미널 시연 명령(scripts/demo.sh) 중 화면 흐름을 바꾸는 것
+    LaunchedEffect(Unit) {
+        container.demo.uiEvents.collect { event ->
+            when (event) {
+                DemoUiEvent.RESTART_APP -> {
+                    settingsOpen = false
+                    launch.restart()
+                }
+                DemoUiEvent.OPEN_SETTINGS -> {
+                    settings.open()
+                    settingsOpen = true
+                }
+                DemoUiEvent.RELOAD_HOME -> home.load()
+            }
+        }
+    }
+    val demoPanelVisible by container.demo.panelVisible.collectAsStateWithLifecycle()
+
     PickmeTheme {
-        BoxWithConstraints(Modifier.fillMaxSize().background(PickmeColors.BackgroundPrimary)) {
-            // 가로 창(Pleos 오른쪽 작업 영역)은 Figma 비율의 앱 영역을 왼쪽에 두고 남는 폭에 시연 컨트롤을 둔다.
-            // 세로 창은 Figma 프로토타입처럼 앱 영역 아래에 둔다
-            val appWidth = maxHeight * (DESIGN_WIDTH / DESIGN_HEIGHT)
-            if (maxWidth - appWidth >= SIDE_PANEL_MIN_WIDTH) {
-                Row(Modifier.fillMaxSize()) {
-                    ProvideDesignScale(Modifier.width(appWidth).fillMaxHeight(), appContent)
-                    demoPanel(Modifier.weight(1f).fillMaxHeight())
-                }
-            } else {
-                Column(Modifier.fillMaxSize()) {
-                    ProvideDesignScale(Modifier.weight(1f).fillMaxWidth(), appContent)
-                    demoPanel(Modifier.fillMaxWidth())
-                }
-            }
+        // 넓은 창(Pleos 가로 앱 영역 1700×1184)은 가로 2단 배치, 좁은 창(세로 840×1184)은 Figma 그대로.
+        // 시연 컨트롤은 Figma 프로토타입처럼 앱 영역 아래에 두고, 영상 촬영 때는 숨긴다(scripts/demo.sh panel off)
+        Column(Modifier.fillMaxSize().background(PickmeColors.BackgroundPrimary)) {
+            ProvideDesignScale(Modifier.weight(1f).fillMaxWidth(), allowLandscape = true, content = appContent)
+            if (demoPanelVisible) demoPanel(Modifier.fillMaxWidth())
         }
     }
-}
-
-/** 시연 컨트롤을 앱 영역 옆에 둘 최소 폭 */
-private val SIDE_PANEL_MIN_WIDTH = 360.dp
-
-/**
- * 실서버 시연 버튼. 1차 기획 서버에는 직원 수락이 없어 「다음 단계」로 RESERVED → SENT(매장 전송)를 넘긴다.
- * 제조 시작·준비 완료·수령은 매장 대시보드(서버 /dashboard/)에서 누른다. 결과는 logcat(태그 PickmeRemote)
- */
-private fun serverDemoActions(
-    dev: RemoteDevTools,
-    orders: OrderRepository,
-    scope: CoroutineScope,
-    onReloadHome: suspend () -> Unit,
-): List<DemoAction> {
-    fun launch(label: String, block: suspend () -> Unit): Result<Unit> {
-        scope.launch {
-            runCatching { block() }.onFailure { Log.w("PickmeRemote", "$label 실패: ${it.message}") }
-        }
-        return Result.success(Unit)
-    }
-    return listOf(
-        "다음 단계" to {
-            val orderId = orders.currentOrder.value?.id
-            if (orderId == null) {
-                Result.failure(IllegalStateException("진행 중 주문이 없어요"))
-            } else {
-                launch("다음 단계") {
-                    dev.advance(orderId)
-                    orders.refresh()
-                }
-            }
-        },
-        "새로고침" to { launch("새로고침") { orders.refresh() } },
-        "서버 초기화" to {
-            launch("서버 초기화") {
-                dev.reset()
-                orders.refresh()
-                orders.clearFinished()
-                onReloadHome()
-            }
-        },
-    )
 }
 
 private class HomeEntry {

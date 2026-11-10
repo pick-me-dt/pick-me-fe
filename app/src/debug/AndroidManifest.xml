@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 로컬 서버(평문 HTTP) 접속은 debug 빌드에서만 허용 (pick-me-be docs/LOCAL_DEV.md 2장) -->
-    <application android:networkSecurityConfig="@xml/network_security_config" />
+    <application android:networkSecurityConfig="@xml/network_security_config">
+        <!-- 터미널 시연 명령(scripts/demo.sh). DUMP 권한이 있는 adb(shell)만 보낼 수 있다 -->
+        <receiver
+            android:name="com.pickmedt.car.debug.DemoCommandReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="com.pickmedt.car.DEMO" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>
