@@ -88,8 +88,8 @@ val checkBoundaries by tasks.registering {
         val p = "com\\.pickmedt\\.car"
         val sdk = "(ai\\.pleos\\.|android\\.car\\.)"
         val net = "(retrofit2\\.|okhttp3\\.|io\\.socket\\.)"
-        // 구현 하위 패키지: data/fake, data/remote, platform/<영역>/<구현>
-        val impl = "$p\\.(data\\.(fake|remote)|platform\\.[a-z]+\\.[a-z]+)\\."
+        // 구현 하위 패키지: data/fake, data/local, data/remote, platform/<영역>/<구현>
+        val impl = "$p\\.(data\\.(fake|local|remote)|platform\\.[a-z]+\\.[a-z]+)\\."
         fun pkg(vararg names: String) = "$p\\.(${names.joinToString("|")})\\."
         val rules = mapOf(
             "core" to listOf("(android|androidx)\\.", sdk, net, pkg("data", "platform", "feature", "ui", "demo", "app")),

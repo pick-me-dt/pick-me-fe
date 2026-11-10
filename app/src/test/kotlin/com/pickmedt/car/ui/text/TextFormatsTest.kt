@@ -16,6 +16,12 @@ class TextFormatsTest {
 
     @Test fun `한글이 아니면 로`() = assertEquals("Pickme로", Josa.euro("Pickme"))
 
+    @Test fun `받침이 없으면 를`() = assertEquals("아이스 아메리카노를", Josa.eulReul("아이스 아메리카노"))
+
+    @Test fun `받침이 있으면 을`() = assertEquals("햄치즈 샌드위치를", Josa.eulReul("햄치즈 샌드위치"))
+
+    @Test fun `ㄹ 받침도 을`() = assertEquals("콜드브루 말을", Josa.eulReul("콜드브루 말"))
+
     @Test fun `분은 올림한다`() {
         assertEquals(6, Formats.etaMinutes(360))
         assertEquals(6, Formats.etaMinutes(359))

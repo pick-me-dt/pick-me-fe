@@ -1,6 +1,7 @@
 package com.pickmedt.car.app
 
 import android.app.Application
+import com.pickmedt.car.data.local.PrefsUserSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -13,7 +14,7 @@ class PickmeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer(appScope)
+        container = AppContainer(appScope, PrefsUserSettings(this))
         container.etaReporter.start()
     }
 }

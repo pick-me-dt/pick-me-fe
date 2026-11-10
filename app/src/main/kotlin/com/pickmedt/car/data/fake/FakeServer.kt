@@ -1,6 +1,8 @@
 package com.pickmedt.car.data.fake
 
 import com.pickmedt.car.core.model.CancelReason
+import com.pickmedt.car.core.model.MenuOption
+import com.pickmedt.car.core.model.Money
 import com.pickmedt.car.core.model.Order
 import com.pickmedt.car.core.model.OrderStage
 import com.pickmedt.car.core.model.OrderStage.AWAITING_STORE
@@ -12,18 +14,23 @@ import com.pickmedt.car.core.model.OrderStage.READY
 import com.pickmedt.car.core.model.OrderStage.WAITING_TO_PREPARE
 import com.pickmedt.car.core.model.PickupTiming
 import com.pickmedt.car.core.model.QuickOrder
+import com.pickmedt.car.core.model.StoreSummary
+import com.pickmedt.car.core.model.toOrderLine
 import com.pickmedt.car.core.time.Clock
 import com.pickmedt.car.data.order.Quote
+import com.pickmedt.car.data.order.QuoteIssue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.Duration
+import java.io.IOException
 import java.time.Instant
 import java.util.Locale
 
 /**
  * 서버 없이 2차 기획 흐름을 재현하는 가짜 서버.
- * 차량 쪽 호출(예약·ETA·취소 요청)과 매장 쪽 조작(수락·제조·준비·수령·취소 판단)을 함께 제공한다.
+ * 차량 쪽 호출(예약·ETA·취소 요청)과 매장 쪽 조작(수락·제조·준비·수령·취소 판단),
+ * 예약 전 확인 조건(품절·가격 변경·접수 종료)을 함께 제공한다.
  * 제조 타이밍은 2차 기획 §5 식을 따른다. 기본값 2분·3분은 같은 절의 시연용 가정이다.
  */
 class FakeServer(
@@ -36,7 +43,14 @@ class FakeServer(
     private val state = MutableStateFlow<Order?>(null)
     val order: StateFlow<Order?> = state.asStateFlow()
 
-    val quickOrders: List<QuickOrder> = listOf(SampleData.usualIcedAmericano)
+    var quickOrders: List<QuickOrder> = listOf(SampleData.usualIcedAmericano)
+        private set
+
+    private var nextQuickNo = 1
+    private val soldOutMenuIds = mutableSetOf<String>()
+    private val closedStoreIds = mutableSetOf<String>()
+    private val priceByMenuId = mutableMapOf<String, Money>()
+    private var failNextRefresh = false
 
     private val orderIdByKey = mutableMapOf<String, String>()
     private var nextDisplayNo = firstDisplayNo
@@ -49,7 +63,37 @@ class FakeServer(
 
     fun quote(quickOrderId: String): Quote {
         val quick = quickOrder(quickOrderId)
-        return Quote(quick.id, quick.store, quick.lines, quick.total, issue = null)
+        val lines = currentLines(quick)
+        val total = lines.fold(Money(0)) { sum, line -> sum + line.price }
+        val issue = when {
+            quick.store.id in closedStoreIds -> QuoteIssue.STORE_CLOSED
+            quick.lines.any { it.menuItemId in soldOutMenuIds } -> QuoteIssue.SOLD_OUT
+            total != quick.total -> QuoteIssue.PRICE_CHANGED
+            else -> null
+        }
+        return Quote(
+            quickOrderId = quick.id,
+            store = quick.store,
+            lines = lines,
+            total = total,
+            issue = issue,
+            previousTotal = if (issue == QuoteIssue.PRICE_CHANGED) quick.total else null,
+        )
+    }
+
+    /** 등록 매장·메뉴를 바꾼다. 등록 메뉴는 한 건만 둔다 */
+    fun saveQuickOrder(store: StoreSummary, menu: MenuOption): QuickOrder {
+        val quick = QuickOrder(id = "fake-quick-${nextQuickNo++}", store = store, lines = listOf(menu.toOrderLine()))
+        quickOrders = listOf(quick)
+        return quick
+    }
+
+    /** 재연결·앱 시작 시 서버 상태 조회. 가짜 서버는 상태를 이미 들고 있어 실패 시연만 한다 */
+    fun refresh() {
+        if (failNextRefresh) {
+            failNextRefresh = false
+            throw IOException("시연용 조회 실패")
+        }
     }
 
     fun reserve(quickOrderId: String, idempotencyKey: String): Order {
@@ -58,13 +102,14 @@ class FakeServer(
         check(state.value?.stage?.isActive != true) { "진행 중인 주문이 있습니다" }
 
         val quick = quickOrder(quickOrderId)
+        val lines = currentLines(quick)
         val no = nextDisplayNo++
         val order = Order(
             id = "fake-order-$no",
             displayNo = String.format(Locale.ROOT, "P-%03d", no),
             stage = AWAITING_STORE,
             store = quick.store,
-            lines = quick.lines,
+            lines = lines,
             plateNumber = plateNumber,
             timing = null,
             cancelReason = null,
@@ -141,11 +186,52 @@ class FakeServer(
         state.value = order.copy(timing = timing.copy(etaReceivedAt = timing.etaReceivedAt.minus(by)))
     }
 
-    /** 시연 처음 상태로 */
+    // ── 예약 전 확인 조건 (시연 컨트롤에서 호출) ─────
+
+    /** V02-SO. 기본은 지금 등록 메뉴 */
+    fun markSoldOut(menuItemId: String = firstQuickLine().menuItemId) {
+        soldOutMenuIds += menuItemId
+    }
+
+    /** V02-PC. 기본은 지금 등록 메뉴 */
+    fun changePrice(unitPrice: Money, menuItemId: String = firstQuickLine().menuItemId) {
+        priceByMenuId[menuItemId] = unitPrice
+    }
+
+    /** V02-CL. 기본은 지금 등록 매장 */
+    fun closeStore(storeId: String = quickOrders.first().store.id) {
+        closedStoreIds += storeId
+    }
+
+    fun clearQuoteIssues() {
+        soldOutMenuIds.clear()
+        closedStoreIds.clear()
+        priceByMenuId.clear()
+    }
+
+    /** V01-E. 등록 메뉴를 모두 지운다 */
+    fun clearQuickOrders() {
+        quickOrders = emptyList()
+    }
+
+    /** V00-E. 다음 조회 한 번을 실패시킨다 */
+    fun failNextRefresh() {
+        failNextRefresh = true
+    }
+
+    /** 현재 주문을 지운다. 끝난 주문을 닫을 때도 쓴다 */
     fun reset() {
         state.value = null
         stageBeforeCancel = null
         pickupAtPrepStart = null
+    }
+
+    /** 시연 처음 상태로. 주문과 함께 등록 메뉴·확인 조건도 되돌린다 */
+    fun resetScenario() {
+        reset()
+        quickOrders = listOf(SampleData.usualIcedAmericano)
+        clearQuoteIssues()
+        failNextRefresh = false
     }
 
     // ── 내부 ────────────────────────────────
@@ -180,6 +266,12 @@ class FakeServer(
         check(order.id == orderId) { "다른 주문입니다: $orderId" }
         return order
     }
+
+    /** 가격 변경을 반영한 주문 줄 */
+    private fun currentLines(quick: QuickOrder) =
+        quick.lines.map { line -> priceByMenuId[line.menuItemId]?.let { line.copy(unitPrice = it) } ?: line }
+
+    private fun firstQuickLine() = checkNotNull(quickOrders.firstOrNull()?.lines?.firstOrNull()) { "등록 메뉴가 없습니다" }
 
     private fun quickOrder(id: String): QuickOrder =
         quickOrders.firstOrNull { it.id == id } ?: throw IllegalArgumentException("등록 메뉴가 없습니다: $id")

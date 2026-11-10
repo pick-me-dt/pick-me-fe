@@ -1,7 +1,9 @@
 package com.pickmedt.car.data.fake
 
 import com.pickmedt.car.core.model.CancelReason
+import com.pickmedt.car.core.model.Money
 import com.pickmedt.car.core.model.OrderStage
+import com.pickmedt.car.data.order.QuoteIssue
 import com.pickmedt.car.testing.MutableClock
 import com.pickmedt.car.testing.kst
 import org.junit.Assert.assertEquals
@@ -153,6 +155,36 @@ class FakeServerTest {
         server.backdateEtaReceipt(Duration.ofSeconds(91))
         assertEquals(kst("08:00"), server.order.value!!.requestedAt)
         assertEquals(kst("08:02").minusSeconds(91), server.order.value!!.timing!!.etaReceivedAt)
+    }
+
+    @Test fun `등록 메뉴를 바꾸면 홈 메뉴가 바뀐다`() {
+        val saved = server.saveQuickOrder(SampleData.seocho, SampleData.hotAmericano)
+        assertEquals(listOf(saved), server.quickOrders)
+        assertEquals("서초 DT점", saved.store.name)
+        assertEquals("따뜻한 아메리카노", saved.lines.single().name)
+    }
+
+    @Test fun `품절이면 견적에 품절 표시`() {
+        server.markSoldOut()
+        assertEquals(QuoteIssue.SOLD_OUT, server.quote(usual).issue)
+    }
+
+    @Test fun `품절 메뉴 대신 다른 메뉴를 등록하면 정상 견적`() {
+        server.markSoldOut()
+        val other = server.saveQuickOrder(SampleData.yangjae, SampleData.hotAmericano)
+        assertNull(server.quote(other.id).issue)
+    }
+
+    @Test fun `접수 종료 매장 대신 다른 매장을 등록하면 정상 견적`() {
+        server.closeStore()
+        val other = server.saveQuickOrder(SampleData.seocho, SampleData.icedAmericano)
+        assertNull(server.quote(other.id).issue)
+    }
+
+    @Test fun `조회 실패를 걸면 다음 조회 한 번만 실패한다`() {
+        server.failNextRefresh()
+        assertTrue(runCatching { server.refresh() }.isFailure)
+        assertTrue(runCatching { server.refresh() }.isSuccess)
     }
 
     @Test fun `초기화하면 주문이 없다`() {

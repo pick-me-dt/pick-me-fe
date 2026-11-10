@@ -1,21 +1,29 @@
 package com.pickmedt.car.demo
 
 import com.pickmedt.car.core.model.Gear
+import com.pickmedt.car.core.model.Money
+import com.pickmedt.car.data.fake.FakeCatalog
 import com.pickmedt.car.data.fake.FakeServer
+import com.pickmedt.car.data.settings.UserSettingsRepository
 import com.pickmedt.car.platform.drive.fake.FakeDriveSignalSource
 import com.pickmedt.car.platform.navi.scripted.ScriptedEtaSource
+import com.pickmedt.car.platform.navi.scripted.ScriptedRouteSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.Duration
 
 /**
  * 시연 컨트롤 (Figma 프로토타입 하단 '시연 컨트롤' 영역).
- * 가짜 서버의 매장 조작, 모의 ETA, 모의 주행 신호를 바꾼다. 실제 주문·차량과 연동되지 않는다.
+ * 가짜 서버의 매장 조작·예약 전 확인 조건, 모의 ETA·경로·주행 신호, 기기 설정을 바꾼다.
+ * 실제 주문·차량과 연동되지 않는다.
  */
 class DemoController(
     private val server: FakeServer,
     private val drive: FakeDriveSignalSource,
     private val eta: ScriptedEtaSource,
+    private val catalog: FakeCatalog,
+    private val routes: ScriptedRouteSource,
+    private val settings: UserSettingsRepository,
     private val reportEtaNow: suspend () -> Unit,
     private val pauseEtaReports: () -> Unit,
     private val resumeEtaReports: () -> Unit,
@@ -58,8 +66,53 @@ class DemoController(
     /** ETA 전송을 다시 시작한다. 시작하면 바로 한 번 보낸다 */
     fun reconnect() = runCatching { resumeEtaReports() }
 
-    fun reset() = runCatching {
+    // ── 시작 (V00) ──────────────────────────
+
+    /** 동의·차량번호를 지우고 주문을 비운다. 화면을 스플래시로 되돌리는 일은 AppRoot가 한다 */
+    fun firstRun() = runCatching {
+        settings.reset()
         server.reset()
+        eta.clear()
+        drive.shift(Gear.PARK)
+        resumeEtaReports()
+    }
+
+    /** V00-E. 다음 서버 조회 한 번을 실패시킨다. 「첫 실행」·「앱 다시 시작」 전에 누른다 */
+    fun failNextLoad() = runCatching { server.failNextRefresh() }
+
+    // ── 홈·예약 (V01·V02) ────────────────────
+
+    /** V01-E */
+    fun clearQuickOrders() = runCatching { server.clearQuickOrders() }
+
+    /** V01-R */
+    fun removeRoute() = runCatching { routes.setRoute(null) }
+
+    fun restoreRoute() = runCatching { routes.setRoute(ScriptedRouteSource.DEFAULT) }
+
+    /** V01-NO */
+    fun noStores() = runCatching { catalog.noStores = true }
+
+    /** V02-SO. 지금 등록 메뉴를 품절로 */
+    fun soldOut() = runCatching { server.markSoldOut() }
+
+    /** V02-PC. Figma 예시 금액 4,800원 */
+    fun priceUp() = runCatching { server.changePrice(Money(4_800)) }
+
+    /** V02-CL. 지금 등록 매장의 접수를 닫는다 */
+    fun closeStore() = runCatching { server.closeStore() }
+
+    /** 경로·매장·품절·가격·접수 조건을 정상으로 */
+    fun clearIssues() = runCatching {
+        server.clearQuoteIssues()
+        catalog.noStores = false
+        routes.setRoute(ScriptedRouteSource.DEFAULT)
+    }
+
+    fun reset() = runCatching {
+        server.resetScenario()
+        catalog.noStores = false
+        routes.setRoute(ScriptedRouteSource.DEFAULT)
         eta.clear()
         drive.shift(Gear.PARK)
         resumeEtaReports()

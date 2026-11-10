@@ -34,6 +34,21 @@ object PickmeColors {
     /** button/basic/enabled, button/filled/disabled (흰색 5%) */
     val ButtonBasic = Color(0x0DFFFFFF)
 
-    /** divider/secondary (흰색 10%) — 비활성 버튼 테두리 */
+    /** divider/secondary (흰색 10%) — 비활성 버튼 테두리, 입력란 테두리 */
     val DividerSecondary = Color(0x1AFFFFFF)
+
+    /** divider/tertiary (흰색 20%) — 체크박스 미선택 테두리 */
+    val DividerTertiary = Color(0x33FFFFFF)
+
+    /** field/background — 입력란 배경 */
+    val FieldBackground = Color(0xFF131417)
+
+    /** regulation/red — 입력 오류 */
+    val RegulationRed = Color(0xFFFF4339)
+
+    /**
+     * 체크박스 선택. Figma에 선택 모양이 없어 공식 컴포넌트(2:21228)의 switch/on 값을 썼다.
+     * 노드 단독 응답이라 라이트 모드 값일 수 있다 (다크 모드 값 확인 안 함)
+     */
+    val CheckboxOn = Color(0xFF02C265)
 }

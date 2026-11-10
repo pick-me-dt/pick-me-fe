@@ -1,9 +1,11 @@
 package com.pickmedt.car.app
 
 import com.pickmedt.car.core.model.EtaReading
+import com.pickmedt.car.core.model.MenuOption
 import com.pickmedt.car.core.model.Order
 import com.pickmedt.car.core.model.OrderStage
 import com.pickmedt.car.core.model.QuickOrder
+import com.pickmedt.car.core.model.StoreSummary
 import com.pickmedt.car.data.order.OrderRepository
 import com.pickmedt.car.data.order.Quote
 import com.pickmedt.car.platform.navi.scripted.ScriptedEtaSource
@@ -67,6 +69,7 @@ class EtaReporterTest {
         }
 
         override suspend fun quickOrders(): List<QuickOrder> = emptyList()
+        override suspend fun saveQuickOrder(store: StoreSummary, menu: MenuOption): QuickOrder = error("사용하지 않음")
         override suspend fun quote(quickOrderId: String): Quote = error("사용하지 않음")
         override suspend fun reserve(quickOrderId: String, idempotencyKey: String): Order = error("사용하지 않음")
         override suspend fun requestCancel(orderId: String) = Unit

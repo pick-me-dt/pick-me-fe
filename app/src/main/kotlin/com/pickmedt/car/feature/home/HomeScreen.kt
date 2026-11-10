@@ -26,12 +26,15 @@ data class HomeUiState(
     val info: String,
     /** 예약은 주차 확인일 때만 (2차 기획 §7) */
     val canReserve: Boolean,
+    /** 등록 매장·메뉴 변경도 주차 상태에서만 (Figma V01-E 「등록과 변경은 주차 상태에서 진행해요」) */
+    val canChange: Boolean,
 )
 
 fun toHomeUiState(quick: QuickOrder, drive: DriveContext) = HomeUiState(
     menuName = quick.lines.firstOrNull()?.name.orEmpty(),
     info = Formats.homeInfoLine(quick.store, quick.lines, quick.total),
     canReserve = drive.allowsDetail,
+    canChange = drive.allowsDetail,
 )
 
 /** V01 시작 (Figma 노드 2:35998) */
@@ -45,7 +48,7 @@ fun HomeScreen(
     ScreenFrame(
         modifier = modifier,
         actions = {
-            PleosButton("매장·메뉴 변경", PleosButtonStyle.Basic, onChangeMenu)
+            PleosButton("매장·메뉴 변경", if (state.canChange) PleosButtonStyle.Basic else PleosButtonStyle.Disabled, onChangeMenu)
             PleosButton(
                 "이 메뉴로 예약",
                 if (state.canReserve) PleosButtonStyle.Filled else PleosButtonStyle.Disabled,

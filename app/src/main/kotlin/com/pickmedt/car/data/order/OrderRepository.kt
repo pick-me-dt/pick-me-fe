@@ -1,8 +1,10 @@
 package com.pickmedt.car.data.order
 
 import com.pickmedt.car.core.model.EtaReading
+import com.pickmedt.car.core.model.MenuOption
 import com.pickmedt.car.core.model.Order
 import com.pickmedt.car.core.model.QuickOrder
+import com.pickmedt.car.core.model.StoreSummary
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -15,6 +17,9 @@ interface OrderRepository {
 
     /** 홈에 보여 줄 등록 매장·메뉴 */
     suspend fun quickOrders(): List<QuickOrder>
+
+    /** 등록 매장·메뉴를 바꾼다 (Figma V01-M → V01-N). 바뀐 등록 메뉴를 돌려준다 */
+    suspend fun saveQuickOrder(store: StoreSummary, menu: MenuOption): QuickOrder
 
     /** 예약 전 가격·품절 재확인 (2차 기획 §7) */
     suspend fun quote(quickOrderId: String): Quote

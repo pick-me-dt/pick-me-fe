@@ -47,6 +47,20 @@ object PickmeType {
     val bold32x145 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 32, 32 * 1.45f)
     val bold26x145 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 26, 26 * 1.45f)
     val bold24x140 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 24, 24 * 1.4f)
+    val bold24x145 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 24, 24 * 1.45f)
+
+    /** Figma 행간 normal. 화면 높이로 계산한 값 (V01-M·N 제목 2줄 114) */
+    val bold48x57 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 48, 57)
+
+    /** Figma 행간 normal. 화면 높이로 계산한 값 (V01-M·N 안내 2줄 66) */
+    val bold28x33 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 28, 33)
+
+    /** Title/Medium/Normal — 입력란 글자 */
+    val regular36x44 @Composable @ReadOnlyComposable get() = style(FontWeight.Normal, 36, 44)
+
+    /** Body/Small/Normal — 입력란 도움말 */
+    val regular26x34 @Composable @ReadOnlyComposable get() = style(FontWeight.Normal, 26, 34)
+    val regular26x145 @Composable @ReadOnlyComposable get() = style(FontWeight.Normal, 26, 26 * 1.45f)
     val regular28x140 @Composable @ReadOnlyComposable get() = style(FontWeight.Normal, 28, 28 * 1.4f)
     val regular28x145 @Composable @ReadOnlyComposable get() = style(FontWeight.Normal, 28, 28 * 1.45f)
     val regular26x140 @Composable @ReadOnlyComposable get() = style(FontWeight.Normal, 26, 26 * 1.4f)

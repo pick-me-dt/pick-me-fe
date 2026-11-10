@@ -10,26 +10,31 @@ app/src/main/kotlin/com/pickmedt/car/
 │              PickmeApplication, MainActivity, AppContainer(수동 DI), AppRoot(최상위 화면),
 │              EtaReporter(진행 중 주문의 ETA 주기 전송)
 ├─ core/       Android·SDK에 의존하지 않는 순수 Kotlin
-│  ├─ model/   주문·매장·금액·ETA·주행 신호 모델
-│  ├─ rule/    2차 기획 규칙 (주행 맥락 판정, ETA 최신성, 추천 변경 강조)
+│  ├─ model/   주문·매장·메뉴·금액·ETA·경로·주행 신호 모델
+│  ├─ rule/    2차 기획 규칙 (주행 맥락 판정, ETA 최신성, 추천 변경 강조), 차량번호 형식
 │  └─ time/    Clock (테스트·시연에서 시간 주입)
 ├─ data/       서버와 주고받는 데이터
-│  ├─ order/   OrderRepository 인터페이스와 값 타입
-│  ├─ fake/    가짜 서버 (실서버 연동 전 개발·시연용)
-│  └─ remote/  실서버 연동 (Retrofit·Socket.IO) — 11/13 예정
+│  ├─ order/    OrderRepository 인터페이스와 값 타입 (견적·예약 전 확인 조건)
+│  ├─ catalog/  CatalogRepository: 경로상 매장, 매장 메뉴
+│  ├─ settings/ UserSettingsRepository: 정보 이용 동의, 차량번호
+│  ├─ fake/     가짜 서버·가짜 매장 목록·메모리 설정 (실서버 연동 전 개발·시연·테스트용)
+│  ├─ local/    기기 저장 (SharedPreferences 설정)
+│  └─ remote/   실서버 연동 (Retrofit·Socket.IO) — 11/13 예정
 ├─ platform/   차량 플랫폼 (Pleos SDK·AAOS Car API)
 │  ├─ drive/   기어·속도·주행 규제 신호
 │  │  ├─ fake/ 모의 신호
 │  │  └─ car/  AAOS Car API 구현 — 게이트 G2·G4 이후
-│  └─ navi/    매장 입구까지 남은 시간(ETA)
-│     ├─ scripted/ 모의 ETA
+│  └─ navi/    매장 입구까지 남은 시간(ETA), 내비게이션 경로
+│     ├─ scripted/ 모의 ETA·모의 경로
 │     └─ pleos/    NaviHelper 구현 — 게이트 G3 이후
 ├─ feature/    화면 (Figma 화면 코드 단위, 4장)
-│              <화면>Screen(상태 없는 Compose) + toXxxUiState()(순수 함수, 단위 테스트)
+│              <화면>Screen(상태 없는 Compose) + toXxxUiState()·xxxMessage()(순수 함수, 단위 테스트)
+│              여러 화면을 오가는 흐름은 <영역>Controller(단계 StateFlow, 단위 테스트)
 ├─ demo/       시연 컨트롤 (Figma 프로토타입 하단 영역)
 └─ ui/
    ├─ theme/     색 토큰, Asta Sans 글자 스타일, DesignScale(Figma 840 폭 비율)
-   ├─ component/ Pleos 공식 컴포넌트(ivi_title·ivi_basic_button)와 픽미 공용 컴포넌트
+   ├─ component/ Pleos 공식 컴포넌트(ivi_title·ivi_basic_button·ivi_text_field·체크박스)와
+   │             픽미 공용 컴포넌트(문구형 화면 MessageScreen, 카드형 본문 StatusCardBody 등)
    └─ text/      조사·시각·금액 문구
 
 app/src/main/res/  drawable(Figma SVG를 변환한 벡터), font(Asta Sans)
@@ -50,7 +55,7 @@ design/            Figma SVG 원본(figma-assets/), 글꼴 라이선스(licenses
 ./gradlew :app:recordRoborazziDebug
 ```
 
-인터페이스는 영역 바로 아래(`data/order`, `platform/drive`, `platform/navi`)에 두고, 구현은 하위 패키지(`fake`, `remote`, `car`, `pleos`, `scripted`)에 둡니다.
+인터페이스는 영역 바로 아래(`data/order`, `data/catalog`, `data/settings`, `platform/drive`, `platform/navi`)에 두고, 구현은 하위 패키지(`fake`, `local`, `remote`, `car`, `pleos`, `scripted`)에 둡니다.
 
 ## 2. 경계 규칙
 
@@ -62,7 +67,7 @@ design/            Figma SVG 원본(figma-assets/), 글꼴 라이선스(licenses
 | `data` | Pleos SDK, `platform`·`feature`·`ui`·`demo`·`app` | 서버 데이터와 차량 신호를 분리 |
 | `data` (`remote` 제외) | 네트워크 (Retrofit·OkHttp·Socket.IO) | 네트워크 코드는 `data/remote`에만 |
 | `platform` | 네트워크, `data`·`feature`·`ui`·`demo`·`app` | 차량 신호만 다룸 |
-| `feature` | Pleos SDK, 네트워크, 구현 하위 패키지(`data/fake`·`data/remote`·`platform/*/*`), `demo`·`app` | 화면은 인터페이스만 사용. 가짜 ↔ 실서버, 모의 ↔ 실차 교체가 화면에 영향 없음 |
+| `feature` | Pleos SDK, 네트워크, 구현 하위 패키지(`data/fake`·`data/local`·`data/remote`·`platform/*/*`), `demo`·`app` | 화면은 인터페이스만 사용. 가짜 ↔ 실서버, 모의 ↔ 실차 교체가 화면에 영향 없음 |
 | `ui` | Pleos SDK, 네트워크, `data`·`platform`·`feature`·`demo`·`app` | 공용 컴포넌트는 데이터 출처를 모름 |
 | `demo` | Pleos SDK, 네트워크, `feature`·`app`, `data/remote` | 시연 컨트롤은 가짜·모의 구현만 조작 |
 | `app` | 없음 | 모든 것을 연결하는 곳 |
@@ -76,8 +81,11 @@ Pleos SDK(`ai.pleos.*`)와 AAOS Car API(`android.car.*`)는 `platform/` 아래�
 | 인터페이스 | 지금 구현 | 다음 구현 |
 | --- | --- | --- |
 | `OrderRepository` | `data/fake/FakeOrderRepository` | `data/remote` (서버 2차 기획 반영 후) |
+| `CatalogRepository` | `data/fake/FakeCatalog` | `data/remote` (매장·메뉴 API 확정 후) |
+| `UserSettingsRepository` | `data/local/PrefsUserSettings` (테스트는 `data/fake/InMemoryUserSettings`) | 차량번호 서버 등록 API가 정해지면 함께 저장 |
 | `DriveSignalSource` | `platform/drive/fake/FakeDriveSignalSource` | `platform/drive/car` |
 | `EtaSource` | `platform/navi/scripted/ScriptedEtaSource` | `platform/navi/pleos` (NaviHelper) |
+| `RouteSource` | `platform/navi/scripted/ScriptedRouteSource` | `platform/navi/pleos` (NaviHelper) |
 
 ## 4. 기능 패키지와 Figma 화면
 
@@ -90,9 +98,12 @@ Figma `prototype` 페이지의 화면 코드를 기준으로 나눕니다.
 | `feature/reserve` | V02 | 예약 확인, 품절, 가격 변경 재확인, 매장 접수 종료 |
 | `feature/progress` | V03·V04·V05·V07, V06-C·D·E | 주문 단계에 따라 자동으로 바뀌는 화면: 매장 확인 중, 예약 거절, 응답 지연, 제조 대기·제조 중·준비 완료, 연결·ETA 오류, 제조 전·후 지연, 수령 완료, 취소 확인 중·완료·거절 |
 | `feature/order` | V06-A·B·L | 사용자가 여는 화면: 주문 상세, 취소 요청 확인, 주행 중 상세 제한 |
-
-V06의 취소 확인 중·완료·거절은 주문 단계(서버 상태)로 결정되므로 `feature/progress`가 그립니다. 같은 카드형 본문은 `ui/component/StatusCardBody`를 함께 씁니다.
 | `feature/settings` | V08 | 설정·등록 정보 관리, 이용 안내·정보 처리 |
+
+- V06의 취소 확인 중·완료·거절은 주문 단계(서버 상태)로 결정되므로 `feature/progress`가 그립니다. 같은 카드형 본문은 `ui/component/StatusCardBody`를 함께 씁니다.
+- V00·V01 예외·V02 예외·V08은 「eyebrow → 제목 → 안내 → 작은 안내 + 버튼 목록」 구성이라 `ui/component/MessageScreen` 하나로 그립니다. 기능 패키지는 문구와 버튼을 정하는 순수 함수(`xxxMessage()`)만 둡니다.
+- 홈 흐름(V01·V02)은 `feature/home/HomeController`가 단계를 들고, V02 화면은 `feature/reserve`가 그립니다. 둘을 잇는 일은 `app/AppRoot`가 합니다.
+- 설정의 차량번호 변경은 `feature/launch`의 차량번호 화면(V00-I·IE)을 다시 씁니다. 기능 패키지끼리 import하지 않도록 `app/AppRoot`에서 연결합니다.
 
 매장 화면(S01~S03)은 백엔드 저장소의 매장 웹(`pick-me-be/public/`) 범위입니다.
 
