@@ -6,6 +6,7 @@ import com.pickmedt.car.data.fake.FakeCatalog
 import com.pickmedt.car.data.fake.FakeServer
 import com.pickmedt.car.data.settings.UserSettingsRepository
 import com.pickmedt.car.platform.drive.fake.FakeDriveSignalSource
+import com.pickmedt.car.platform.navi.pleos.PleosNaviProbe
 import com.pickmedt.car.platform.navi.scripted.ScriptedEtaSource
 import com.pickmedt.car.platform.navi.scripted.ScriptedRouteSource
 import kotlinx.coroutines.CoroutineScope
@@ -19,11 +20,14 @@ import java.time.Duration
  */
 class DemoController(
     private val server: FakeServer,
-    private val drive: FakeDriveSignalSource,
+    /** 실차 신호를 쓰면 null. 이때 기어는 Virtual Console에서 바꾼다 */
+    private val drive: FakeDriveSignalSource?,
     private val eta: ScriptedEtaSource,
     private val catalog: FakeCatalog,
     private val routes: ScriptedRouteSource,
     private val settings: UserSettingsRepository,
+    /** 차량에서만 있다. 게이트 G3 확인용 */
+    private val naviProbe: PleosNaviProbe?,
     private val reportEtaNow: suspend () -> Unit,
     private val pauseEtaReports: () -> Unit,
     private val resumeEtaReports: () -> Unit,
@@ -43,7 +47,9 @@ class DemoController(
     fun approveCancel() = runCatching { server.approveCancel() }
     fun rejectCancel() = runCatching { server.rejectCancel() }
 
-    fun shift(gear: Gear) = runCatching { drive.shift(gear) }
+    fun shift(gear: Gear) = runCatching {
+        checkNotNull(drive) { "실차 기어 사용 중 · Virtual Console에서 바꾸세요" }.shift(gear)
+    }
 
     fun setEta(etaSec: Int) = runCatching {
         eta.set(etaSec)
@@ -66,6 +72,14 @@ class DemoController(
     /** ETA 전송을 다시 시작한다. 시작하면 바로 한 번 보낸다 */
     fun reconnect() = runCatching { resumeEtaReports() }
 
+    // ── 내비 확인 (게이트 G3) ─────────────────
+
+    /** 양재점으로 실제 내비 경로를 요청한다. 결과는 logcat 태그 PickmeNavi */
+    fun naviRoute() = runCatching { checkNotNull(naviProbe) { "차량에서만 쓸 수 있어요" }.requestRouteToYangjae() }
+
+    /** 실제 내비의 경로 상태와 남은 시간을 조회한다. 결과는 logcat 태그 PickmeNavi */
+    fun naviQuery() = runCatching { checkNotNull(naviProbe) { "차량에서만 쓸 수 있어요" }.query() }
+
     // ── 시작 (V00) ──────────────────────────
 
     /** 동의·차량번호를 지우고 주문을 비운다. 화면을 스플래시로 되돌리는 일은 AppRoot가 한다 */
@@ -73,7 +87,7 @@ class DemoController(
         settings.reset()
         server.reset()
         eta.clear()
-        drive.shift(Gear.PARK)
+        drive?.shift(Gear.PARK)
         resumeEtaReports()
     }
 
@@ -114,7 +128,7 @@ class DemoController(
         catalog.noStores = false
         routes.setRoute(ScriptedRouteSource.DEFAULT)
         eta.clear()
-        drive.shift(Gear.PARK)
+        drive?.shift(Gear.PARK)
         resumeEtaReports()
     }
 }

@@ -1,9 +1,13 @@
 package com.pickmedt.car.app
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickmedt.car.core.model.DriveContext
 import com.pickmedt.car.core.model.Order
@@ -63,6 +68,8 @@ import com.pickmedt.car.feature.settings.SettingsStep
 import com.pickmedt.car.feature.settings.legalMessage
 import com.pickmedt.car.feature.settings.settingsMessage
 import com.pickmedt.car.ui.component.MessageScreen
+import com.pickmedt.car.ui.theme.DESIGN_HEIGHT
+import com.pickmedt.car.ui.theme.DESIGN_WIDTH
 import com.pickmedt.car.ui.theme.PickmeColors
 import com.pickmedt.car.ui.theme.PickmeTheme
 import com.pickmedt.car.ui.theme.ProvideDesignScale
@@ -116,50 +123,71 @@ fun AppRoot(container: AppContainer) {
         }
     }
 
-    PickmeTheme {
-        Column(Modifier.fillMaxSize().background(PickmeColors.BackgroundPrimary)) {
-            ProvideDesignScale(Modifier.weight(1f).fillMaxWidth()) {
-                val current = order
-                when {
-                    launchStep != LaunchStep.Done -> LaunchRoute(launch, launchStep, drive)
-                    settingsOpen -> SettingsRoute(
-                        settings = settings,
-                        userSettings = container.userSettings,
-                        drive = drive,
-                        onClose = { settingsOpen = false },
-                        onManageQuickOrder = {
-                            settingsOpen = false
-                            scope.launch { home.changeStoreAndMenu() }
-                        },
-                    )
-                    current == null -> HomeRoute(home, drive)
-                    else -> ProgressRoute(
-                        order = current,
-                        drive = drive,
-                        now = now,
-                        orders = container.orderRepository,
-                        onChooseOtherStore = {
-                            homeEntry.findStores = true
-                            container.orderRepository.clearFinished()
-                        },
-                    )
-                }
-            }
-            DemoPanel(
-                controller = container.demo,
-                onRestartApp = {
+    val appContent: @Composable () -> Unit = {
+        val current = order
+        when {
+            launchStep != LaunchStep.Done -> LaunchRoute(launch, launchStep, drive)
+            settingsOpen -> SettingsRoute(
+                settings = settings,
+                userSettings = container.userSettings,
+                drive = drive,
+                onClose = { settingsOpen = false },
+                onManageQuickOrder = {
                     settingsOpen = false
-                    launch.restart()
+                    scope.launch { home.changeStoreAndMenu() }
                 },
-                onOpenSettings = {
-                    settings.open()
-                    settingsOpen = true
+            )
+            current == null -> HomeRoute(home, drive)
+            else -> ProgressRoute(
+                order = current,
+                drive = drive,
+                now = now,
+                orders = container.orderRepository,
+                onChooseOtherStore = {
+                    homeEntry.findStores = true
+                    container.orderRepository.clearFinished()
                 },
-                onReloadHome = { scope.launch { home.load() } },
             )
         }
     }
+    val demoPanel: @Composable (Modifier) -> Unit = { modifier ->
+        DemoPanel(
+            controller = container.demo,
+            onRestartApp = {
+                settingsOpen = false
+                launch.restart()
+            },
+            onOpenSettings = {
+                settings.open()
+                settingsOpen = true
+            },
+            onReloadHome = { scope.launch { home.load() } },
+            modifier = modifier,
+        )
+    }
+
+    PickmeTheme {
+        BoxWithConstraints(Modifier.fillMaxSize().background(PickmeColors.BackgroundPrimary)) {
+            // 가로 창(Pleos 오른쪽 작업 영역)은 Figma 비율의 앱 영역을 왼쪽에 두고 남는 폭에 시연 컨트롤을 둔다.
+            // 세로 창은 Figma 프로토타입처럼 앱 영역 아래에 둔다
+            val appWidth = maxHeight * (DESIGN_WIDTH / DESIGN_HEIGHT)
+            if (maxWidth - appWidth >= SIDE_PANEL_MIN_WIDTH) {
+                Row(Modifier.fillMaxSize()) {
+                    ProvideDesignScale(Modifier.width(appWidth).fillMaxHeight(), appContent)
+                    demoPanel(Modifier.weight(1f).fillMaxHeight())
+                }
+            } else {
+                Column(Modifier.fillMaxSize()) {
+                    ProvideDesignScale(Modifier.weight(1f).fillMaxWidth(), appContent)
+                    demoPanel(Modifier.fillMaxWidth())
+                }
+            }
+        }
+    }
 }
+
+/** 시연 컨트롤을 앱 영역 옆에 둘 최소 폭 */
+private val SIDE_PANEL_MIN_WIDTH = 360.dp
 
 private class HomeEntry {
     var findStores = false

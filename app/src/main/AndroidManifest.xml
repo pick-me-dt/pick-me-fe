@@ -7,6 +7,13 @@
         android:required="true" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 기어(GEAR_SELECTION) -->
+    <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
+    <!-- 속도(PERF_VEHICLE_SPEED). 런타임 허용이 없으면 속도 없이 기어·주행 규제로 판단한다 -->
+    <uses-permission android:name="android.car.permission.CAR_SPEED" />
+    <!-- NaviHelper 경로 정보 조회(NAVI_ROUTE)·경로 요청(NAVI_ROUTE_SEARCH). 둘 다 normal 권한 -->
+    <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
+    <uses-permission android:name="pleos.car.permission.NAVI_ROUTE_SEARCH" />
 
     <application
         android:name=".app.PickmeApplication"

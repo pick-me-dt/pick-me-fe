@@ -25,13 +25,15 @@ Figma 프로토타입의 차량 화면을 모두 구현했습니다.
 | --- | --- |
 | 시작·홈·예약 | 첫 실행, 앱 다시 시작, 조회 실패, 설정 열기, 등록 내역 없음, 경로 없음, 매장 없음, 조건 해제, 메뉴 품절, 가격 변경, 접수 종료 |
 | 매장 | 매장 수락·거절, 응답 지연, 제조 시작, 준비 완료, 수령 완료, 취소 승인·거절 |
-| 이동 | ETA 6분, 지연 +4분, 연결 끊김·복구, P단, D단 |
+| 이동 | ETA 6분, 지연 +4분, 연결 끊김·복구, P단, D단, 내비 경로(양재), 내비 조회 |
+
+에뮬레이터(차량)에서는 기어를 Car API로 읽으므로 P단·D단 버튼 대신 Virtual Console에서 바꿉니다. 「내비 경로(양재)」·「내비 조회」는 실제 내비게이션에 경로를 요청하고 남은 시간을 logcat(`PickmeNavi`)에 남깁니다. 「접기」로 컨트롤을 한 줄로 줄일 수 있습니다.
 
 「초기화」는 항상 보이며 주문·등록 메뉴·확인 조건·ETA·기어를 처음으로 되돌립니다(동의·차량번호는 유지). 「조회 실패」는 「첫 실행」이나 「앱 다시 시작」 전에 눌러야 V00-E가 나옵니다.
 
 ## 실행 방법
 
-1. Android Studio에 Pleos Connect Emulator v2.1.0(API 34)을 설치하고 AVD를 콜드 부팅으로 만듭니다. ([설치 가이드](https://document.pleos.ai/docs/connect/guide/getting-started/application-development/setup-connect-sdk-emulator))
+1. Android Studio에 Pleos Connect Emulator v2.1.0(API 34)을 설치하고 AVD를 콜드 부팅으로 만듭니다. ([설치 가이드](https://document.pleos.ai/docs/connect/guide/getting-started/application-development/setup-connect-sdk-emulator), 명령줄로 만든 방법과 확인 결과는 [에뮬레이터 게이트 결과](docs/plans/2026-11-10-emulator-gates.md))
 2. 이 저장소를 Android Studio로 열거나 터미널에서 빌드합니다.
 
 ```bash

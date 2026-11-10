@@ -23,10 +23,10 @@ app/src/main/kotlin/com/pickmedt/car/
 ├─ platform/   차량 플랫폼 (Pleos SDK·AAOS Car API)
 │  ├─ drive/   기어·속도·주행 규제 신호
 │  │  ├─ fake/ 모의 신호
-│  │  └─ car/  AAOS Car API 구현 — 게이트 G2·G4 이후
+│  │  └─ car/  AAOS Car API 구현 (기어·속도·주행 규제)
 │  └─ navi/    매장 입구까지 남은 시간(ETA), 내비게이션 경로
 │     ├─ scripted/ 모의 ETA·모의 경로
-│     └─ pleos/    NaviHelper 구현 — 게이트 G3 이후
+│     └─ pleos/    NaviHelper — 지금은 게이트 G3 확인용(PleosNaviProbe)
 ├─ feature/    화면 (Figma 화면 코드 단위, 4장)
 │              <화면>Screen(상태 없는 Compose) + toXxxUiState()·xxxMessage()(순수 함수, 단위 테스트)
 │              여러 화면을 오가는 흐름은 <영역>Controller(단계 StateFlow, 단위 테스트)
@@ -45,7 +45,7 @@ design/            Figma SVG 원본(figma-assets/), 글꼴 라이선스(licenses
 
 ### 크기 단위
 
-화면 수치는 Figma 앱 영역(840×1184) 값을 그대로 `designDp`·`designSp`로 씁니다(예: `40.designDp`). `ProvideDesignScale`이 실제 창 폭 ÷ 840 비율을 계산해 늘이거나 줄입니다.
+화면 수치는 Figma 앱 영역(840×1184) 값을 그대로 `designDp`·`designSp`로 씁니다(예: `40.designDp`). `ProvideDesignScale`은 `min(창 폭÷840, 창 높이÷1184)` 비율로 Figma 영역을 가장 크게 넣고 가운데 둡니다. Pleos 작업 영역은 전체일 때 1682×1210(가로), 분할일 때 840×1210(세로)입니다 ([게이트 결과](docs/plans/2026-11-10-emulator-gates.md)).
 
 ### 화면 확인
 
@@ -83,7 +83,7 @@ Pleos SDK(`ai.pleos.*`)와 AAOS Car API(`android.car.*`)는 `platform/` 아래�
 | `OrderRepository` | `data/fake/FakeOrderRepository` | `data/remote` (서버 2차 기획 반영 후) |
 | `CatalogRepository` | `data/fake/FakeCatalog` | `data/remote` (매장·메뉴 API 확정 후) |
 | `UserSettingsRepository` | `data/local/PrefsUserSettings` (테스트는 `data/fake/InMemoryUserSettings`) | 차량번호 서버 등록 API가 정해지면 함께 저장 |
-| `DriveSignalSource` | `platform/drive/fake/FakeDriveSignalSource` | `platform/drive/car` |
+| `DriveSignalSource` | 차량(AAOS): `platform/drive/car/CarDriveSignalSource`, 그 밖: `platform/drive/fake/FakeDriveSignalSource` | — |
 | `EtaSource` | `platform/navi/scripted/ScriptedEtaSource` | `platform/navi/pleos` (NaviHelper) |
 | `RouteSource` | `platform/navi/scripted/ScriptedRouteSource` | `platform/navi/pleos` (NaviHelper) |
 

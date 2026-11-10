@@ -11,12 +11,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,7 @@ private const val COLUMNS = 4
  * 시연 컨트롤 화면. 앱 영역과 분리해 아래에 붙인다 (Figma 프로토타입 840×1184 앱 영역 + 하단 컨트롤).
  * 버튼이 많아 묶음(시작·홈·예약, 매장, 이동)으로 나눠 보여 준다.
  * 화면 흐름을 바꾸는 조작(앱 다시 시작, 설정 열기, 홈 다시 불러오기)은 AppRoot가 넘겨준다.
+ * 촬영할 때 앱 영역을 넓게 쓰도록 접을 수 있다.
  */
 @Composable
 fun DemoPanel(
@@ -41,6 +44,7 @@ fun DemoPanel(
 ) {
     var message by remember { mutableStateOf("시연 컨트롤 · 실제 주문/차량 연동 없음") }
     var group by remember { mutableIntStateOf(0) }
+    var expanded by remember { mutableStateOf(true) }
     val ok = Result.success(Unit)
     val groups: List<Pair<String, List<DemoAction>>> = listOf(
         "시작·홈·예약" to listOf(
@@ -73,6 +77,8 @@ fun DemoPanel(
             "연결 복구" to controller::reconnect,
             "P단" to { controller.shift(Gear.PARK) },
             "D단" to { controller.shift(Gear.DRIVE) },
+            "내비 경로(양재)" to controller::naviRoute,
+            "내비 조회" to controller::naviQuery,
         ),
     )
     fun run(label: String, action: () -> Result<Unit>) {
@@ -86,7 +92,11 @@ fun DemoPanel(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(message, color = Color(0xFFE6E6E6))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(message, color = Color(0xFFE6E6E6), modifier = Modifier.weight(1f))
+            TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "접기" else "펴기") }
+        }
+        if (!expanded) return@Column
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             groups.forEachIndexed { index, (name, _) ->
                 val selected = index == group
