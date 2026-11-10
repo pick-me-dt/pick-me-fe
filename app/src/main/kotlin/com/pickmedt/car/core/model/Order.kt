@@ -70,6 +70,12 @@ data class Order(
     val cancelRejected: Boolean = false,
     /** 수령 완료 시각 (Figma V07) */
     val pickedUpAt: Instant? = null,
+    /** 예약 요청 시각. 매장 응답 지연 판단에 쓴다 (Figma V03-T) */
+    val requestedAt: Instant? = null,
+    /** 취소 완료 시각 (Figma V06-D) */
+    val cancelledAt: Instant? = null,
+    /** 매장이 남긴 거절·취소 사유. 예: "주문량 증가" (Figma V03-R) */
+    val cancelNote: String? = null,
 ) {
     val total: Money get() = lines.fold(Money(0)) { sum, line -> sum + line.price }
 }

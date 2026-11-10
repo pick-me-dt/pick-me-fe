@@ -15,15 +15,15 @@ import com.pickmedt.car.R
 import com.pickmedt.car.feature.progress.ArrivalHeadline.Eta
 import com.pickmedt.car.feature.progress.ArrivalHeadline.PickupNumber
 import com.pickmedt.car.ui.component.CroppedImage
-import com.pickmedt.car.ui.component.OrderSummaryCard
 import com.pickmedt.car.ui.component.PleosButton
 import com.pickmedt.car.ui.component.ScreenFrame
+import com.pickmedt.car.ui.component.StatusCardBody
 import com.pickmedt.car.ui.component.StepIndicator
 import com.pickmedt.car.ui.theme.PickmeColors
 import com.pickmedt.car.ui.theme.PickmeType
 import com.pickmedt.car.ui.theme.designDp
 
-/** 진행 화면 V03·V04·V05·V07 */
+/** 주문 단계에 따라 바뀌는 진행 화면 (V03·V04·V05·V07, V06-C·D·E) */
 @Composable
 fun ProgressScreen(
     state: ProgressUiState,
@@ -33,25 +33,24 @@ fun ProgressScreen(
     ScreenFrame(
         modifier = modifier,
         actions = {
-            PleosButton(state.action.label, state.action.style, onClick = { onAction(state.action.kind) })
+            state.actions.forEach { action ->
+                PleosButton(action.label, action.style, onClick = { onAction(action.kind) })
+            }
         },
     ) {
         when (state) {
-            is ProgressUiState.Card -> CardBody(state)
+            is ProgressUiState.Card -> StatusCardBody(
+                eyebrow = state.eyebrow,
+                title = state.title,
+                card = state.card,
+                lead = state.lead,
+                note = state.note,
+                info = state.info,
+            )
+
             is ProgressUiState.Arrival -> ArrivalBody(state)
-            is ProgressUiState.Other -> Text(state.message, style = PickmeType.bold48x140, color = PickmeColors.TextPrimary)
         }
     }
-}
-
-/** V03·V07 (Figma 노드 2:36063, 2:36282) */
-@Composable
-private fun CardBody(state: ProgressUiState.Card) {
-    Text(state.eyebrow, style = PickmeType.bold26x145, color = PickmeColors.TextSecondary)
-    Text(state.title, style = PickmeType.headline, color = PickmeColors.TextPrimary)
-    OrderSummaryCard(state.card.title, state.card.menu, state.card.detail)
-    Text(state.lead, style = PickmeType.regular28x145, color = PickmeColors.TextSecondary)
-    Text(state.note, style = PickmeType.regular24x145, color = PickmeColors.TextSecondary)
 }
 
 /** V04·V05 (Figma 노드 2:36089) */

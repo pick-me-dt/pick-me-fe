@@ -68,6 +68,7 @@ class FakeServer(
             plateNumber = plateNumber,
             timing = null,
             cancelReason = null,
+            requestedAt = clock.now(),
         )
         orderIdByKey[idempotencyKey] = order.id
         stageBeforeCancel = null
@@ -92,9 +93,15 @@ class FakeServer(
 
     fun accept() = move(from = AWAITING_STORE, to = WAITING_TO_PREPARE)
 
-    fun reject() {
+    /** 예약 거절. note는 매장이 남기는 사유 (예: "주문량 증가") */
+    fun reject(note: String? = null) {
         val order = expect(AWAITING_STORE)
-        state.value = order.copy(stage = CANCELLED, cancelReason = CancelReason.STORE_REJECTED)
+        state.value = order.copy(
+            stage = CANCELLED,
+            cancelReason = CancelReason.STORE_REJECTED,
+            cancelNote = note,
+            cancelledAt = clock.now(),
+        )
     }
 
     fun startPreparing() {
@@ -112,13 +119,26 @@ class FakeServer(
 
     fun approveCancel() {
         val order = expect(CANCEL_REQUESTED)
-        state.value = order.copy(stage = CANCELLED, cancelReason = CancelReason.CANCEL_APPROVED)
+        state.value = order.copy(stage = CANCELLED, cancelReason = CancelReason.CANCEL_APPROVED, cancelledAt = clock.now())
     }
 
     fun rejectCancel() {
         val order = expect(CANCEL_REQUESTED)
         state.value = order.copy(stage = checkNotNull(stageBeforeCancel), cancelRejected = true)
         stageBeforeCancel = null
+    }
+
+    /** 시연용: 예약 요청 시각을 앞당겨 매장 응답 지연(V03-T)을 바로 보여 준다 */
+    fun backdateRequest(by: Duration) {
+        val order = state.value ?: return
+        state.value = order.copy(requestedAt = order.requestedAt?.minus(by))
+    }
+
+    /** 시연용: ETA 수신 시각을 앞당겨 연결·ETA 오류(V04-E)를 바로 보여 준다 */
+    fun backdateEtaReceipt(by: Duration) {
+        val order = state.value ?: return
+        val timing = order.timing ?: return
+        state.value = order.copy(timing = timing.copy(etaReceivedAt = timing.etaReceivedAt.minus(by)))
     }
 
     /** 시연 처음 상태로 */

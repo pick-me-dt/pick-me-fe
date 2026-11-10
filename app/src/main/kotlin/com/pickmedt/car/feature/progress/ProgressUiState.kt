@@ -1,12 +1,17 @@
 package com.pickmedt.car.feature.progress
 
-import com.pickmedt.car.core.model.OrderStage
+import com.pickmedt.car.ui.component.InfoBoxText
 import com.pickmedt.car.ui.component.PleosButtonStyle
+import com.pickmedt.car.ui.component.SummaryCardText
 
-/** Figma 화면 코드와 대응하는 진행 화면 종류 */
+/** Figma 화면 코드와 대응하는 진행 화면 종류. 주문 단계에 따라 자동으로 바뀌는 화면만 여기 둔다 */
 enum class ProgressVariant {
     /** V03 매장 확인 중 */
     AWAITING_STORE,
+    /** V03-T 응답 지연 */
+    STORE_SLOW,
+    /** V03-R 예약 거절 */
+    REJECTED,
     /** V04-A 제조 대기 */
     WAITING,
     /** V05-A 제조 전 지연 */
@@ -17,21 +22,31 @@ enum class ProgressVariant {
     PREPARING_DELAYED,
     /** V04-C 준비 완료 */
     READY,
+    /** V04-E 연결·ETA 오류 */
+    ETA_LOST,
     /** V07 수령 완료 */
     PICKED_UP,
-    /** 아직 화면을 만들지 않은 단계 (취소 확인 중·취소 완료) */
-    OTHER,
+    /** V06-C 취소 확인 중 */
+    CANCEL_PENDING,
+    /** V06-D 취소 완료 */
+    CANCELLED,
+    /** V06-E 취소 거절 */
+    CANCEL_REJECTED,
 }
-
-data class SummaryCardText(val title: String, val menu: String, val detail: String)
 
 data class ProgressAction(val label: String, val style: PleosButtonStyle, val kind: Kind) {
     enum class Kind {
         NONE,
-        /** 주문 상세 (V06) */
+        /** 주문 상세 (V06-A) */
         DETAIL,
         /** 끝난 주문을 닫고 홈으로 */
         FINISH,
+        /** 서버 상태 다시 조회 */
+        REFRESH,
+        /** 다른 매장 선택 (V01-M, 다음 화면 계획) */
+        CHOOSE_OTHER_STORE,
+        /** 취소 거절 안내를 닫고 현재 주문으로 */
+        ACK_CANCEL_REJECTION,
     }
 }
 
@@ -46,17 +61,20 @@ sealed interface ArrivalHeadline {
 
 sealed interface ProgressUiState {
     val variant: ProgressVariant
-    val action: ProgressAction
 
-    /** 주문 요약 카드형 (V03, V07) */
+    /** 하단 버튼. 위에서 아래 순서 */
+    val actions: List<ProgressAction>
+
+    /** 카드형 (V03·V03-R·V03-T·V04-E·V06-C·D·E·V07) */
     data class Card(
         override val variant: ProgressVariant,
         val eyebrow: String,
         val title: String,
         val card: SummaryCardText,
         val lead: String,
-        val note: String,
-        override val action: ProgressAction,
+        val note: String?,
+        override val actions: List<ProgressAction>,
+        val info: InfoBoxText? = null,
     ) : ProgressUiState
 
     /** 도착 시간·단계형 (V04-A·B·C, V05-A·B) */
@@ -68,15 +86,6 @@ sealed interface ProgressUiState {
         val step: Int,
         val menuLine: String,
         val orderLine: String,
-        override val action: ProgressAction,
+        override val actions: List<ProgressAction>,
     ) : ProgressUiState
-
-    /** 화면을 만들기 전인 단계. 다음 화면 계획(V03-R·V06)에서 바꾼다 */
-    data class Other(
-        val stage: OrderStage,
-        val message: String,
-        override val action: ProgressAction,
-    ) : ProgressUiState {
-        override val variant: ProgressVariant get() = ProgressVariant.OTHER
-    }
 }

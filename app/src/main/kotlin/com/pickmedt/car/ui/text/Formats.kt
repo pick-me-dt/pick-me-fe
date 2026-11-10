@@ -2,6 +2,7 @@ package com.pickmedt.car.ui.text
 
 import com.pickmedt.car.core.model.Money
 import com.pickmedt.car.core.model.OrderLine
+import com.pickmedt.car.core.model.OrderStage
 import com.pickmedt.car.core.model.StoreSummary
 import java.time.Instant
 import java.time.ZoneId
@@ -35,4 +36,15 @@ object Formats {
 
     /** 예: "픽미 커피 · 양재 DT점" */
     fun storeLine(store: StoreSummary): String = "${store.brand} · ${store.name}"
+
+    /** 단계 이름. 단계 표시(StepIndicator)와 같은 말을 쓴다 */
+    fun stageLabel(stage: OrderStage): String = when (stage) {
+        OrderStage.AWAITING_STORE -> "매장 확인 중"
+        OrderStage.WAITING_TO_PREPARE -> "제조 대기"
+        OrderStage.PREPARING -> "제조 중"
+        OrderStage.READY -> "준비 완료"
+        OrderStage.PICKED_UP -> "수령 완료"
+        OrderStage.CANCEL_REQUESTED -> "취소 확인 중"
+        OrderStage.CANCELLED -> "취소 완료"
+    }
 }

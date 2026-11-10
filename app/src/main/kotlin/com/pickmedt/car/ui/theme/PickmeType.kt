@@ -41,6 +41,7 @@ object PickmeType {
     val bold166x190 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 166, 190)
     val bold100x130 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 100, 130)
     val bold48x140 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 48, 48 * 1.4f)
+    val bold40x145 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 40, 40 * 1.45f)
     val bold36x140 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 36, 36 * 1.4f)
     val bold32x140 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 32, 32 * 1.4f)
     val bold32x145 @Composable @ReadOnlyComposable get() = style(FontWeight.Bold, 32, 32 * 1.45f)

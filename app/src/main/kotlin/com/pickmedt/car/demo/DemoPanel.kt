@@ -26,6 +26,7 @@ fun DemoPanel(controller: DemoController, modifier: Modifier = Modifier) {
     val actions: List<Pair<String, () -> Result<Unit>>> = listOf(
         "매장 수락" to controller::accept,
         "매장 거절" to controller::reject,
+        "응답 지연" to controller::slowStoreResponse,
         "제조 시작" to controller::startPreparing,
         "준비 완료" to controller::markReady,
         "수령 완료" to controller::pickUp,
@@ -33,6 +34,8 @@ fun DemoPanel(controller: DemoController, modifier: Modifier = Modifier) {
         "취소 거절" to controller::rejectCancel,
         "ETA 6분" to { controller.setEta(360) },
         "지연 +4분" to { controller.delayEta(240) },
+        "연결 끊김" to controller::disconnect,
+        "연결 복구" to controller::reconnect,
         "P단" to { controller.shift(Gear.PARK) },
         "D단" to { controller.shift(Gear.DRIVE) },
         "초기화" to controller::reset,

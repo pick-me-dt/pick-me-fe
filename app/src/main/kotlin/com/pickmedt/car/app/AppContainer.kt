@@ -31,6 +31,8 @@ class AppContainer(appScope: CoroutineScope, val clock: Clock = Clock.System) {
         drive = fakeDrive,
         eta = scriptedEta,
         reportEtaNow = etaReporter::reportNow,
+        pauseEtaReports = etaReporter::stop,
+        resumeEtaReports = etaReporter::start,
         scope = appScope,
     )
 }

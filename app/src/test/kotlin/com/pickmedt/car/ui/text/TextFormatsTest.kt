@@ -37,4 +37,11 @@ class TextFormatsTest {
     @Test fun `주문 줄`() = assertEquals("Regular  ·  주문 P-021", Formats.orderLine(listOf(testLine), "P-021"))
 
     @Test fun `매장 줄`() = assertEquals("픽미 커피 · 양재 DT점", Formats.storeLine(testStore))
+
+    @Test fun `단계 이름은 단계 표시와 같은 말을 쓴다`() {
+        assertEquals("매장 확인 중", Formats.stageLabel(com.pickmedt.car.core.model.OrderStage.AWAITING_STORE))
+        assertEquals("제조 대기", Formats.stageLabel(com.pickmedt.car.core.model.OrderStage.WAITING_TO_PREPARE))
+        assertEquals("제조 중", Formats.stageLabel(com.pickmedt.car.core.model.OrderStage.PREPARING))
+        assertEquals("준비 완료", Formats.stageLabel(com.pickmedt.car.core.model.OrderStage.READY))
+    }
 }

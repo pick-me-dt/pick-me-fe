@@ -129,6 +129,32 @@ class FakeServerTest {
         assertEquals("P-022", second.displayNo)
     }
 
+    @Test fun `예약 시각과 취소 시각을 남긴다`() {
+        val order = reserved()
+        assertEquals(kst("08:02"), order.requestedAt)
+        server.accept()
+        server.requestCancel(order.id)
+        clock.advance(Duration.ofMinutes(1))
+        server.approveCancel()
+        assertEquals(kst("08:03"), server.order.value!!.cancelledAt)
+    }
+
+    @Test fun `매장 거절 사유를 남긴다`() {
+        reserved()
+        server.reject(note = "주문량 증가")
+        assertEquals("주문량 증가", server.order.value!!.cancelNote)
+        assertEquals(kst("08:02"), server.order.value!!.cancelledAt)
+    }
+
+    @Test fun `시연용으로 예약 시각과 ETA 수신 시각을 앞당길 수 있다`() {
+        val order = reserved()
+        server.reportEta(order.id, etaSec = 360)
+        server.backdateRequest(Duration.ofMinutes(2))
+        server.backdateEtaReceipt(Duration.ofSeconds(91))
+        assertEquals(kst("08:00"), server.order.value!!.requestedAt)
+        assertEquals(kst("08:02").minusSeconds(91), server.order.value!!.timing!!.etaReceivedAt)
+    }
+
     @Test fun `초기화하면 주문이 없다`() {
         reserved()
         server.reset()
