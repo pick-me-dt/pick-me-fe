@@ -4,6 +4,7 @@ import com.pickmedt.car.core.model.Order
 import com.pickmedt.car.core.rule.PlateNumber
 import com.pickmedt.car.data.order.OrderRepository
 import com.pickmedt.car.data.settings.UserSettingsRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,7 +64,11 @@ class LaunchController(
     /** V00-L → V00-E·V00-RE·V00-W·V00-I·홈. V00-E 「다시 시도」도 여기로 온다 */
     suspend fun load() {
         state.value = LaunchStep.Loading
-        if (runCatching { orders.refresh() }.isFailure) {
+        try {
+            orders.refresh()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             state.value = LaunchStep.Failed
             return
         }

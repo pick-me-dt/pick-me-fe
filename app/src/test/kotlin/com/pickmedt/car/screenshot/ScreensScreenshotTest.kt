@@ -116,6 +116,10 @@ class ScreensScreenshotTest {
 
     @Test fun v04c_ready() = progress(testOrder(OrderStage.READY).copy(timing = testTiming("08:08")))
 
+    /** 실서버 주문번호처럼 긴 번호 (Figma에는 없음). 한 줄 안에서 글자가 줄어드는지 확인용 */
+    @Test fun v04c_ready_long_number() =
+        progress(testOrder(OrderStage.READY).copy(displayNo = "MOCK-CDB5BE39", timing = testTiming("08:08")))
+
     @Test fun v05a_waiting_delayed() =
         progress(testOrder(OrderStage.WAITING_TO_PREPARE).copy(timing = testTiming("08:12")), baseline = testTiming("08:08"))
 

@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // 서버 JSON (data/remote)
+    alias(libs.plugins.kotlin.serialization)
     // JVM 스크린샷 테스트 (./gradlew :app:recordRoborazziDebug)
     alias(libs.plugins.roborazzi)
 }
@@ -20,6 +22,10 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        // 실서버 주소. 비우면 앱 안의 가짜 서버를 쓴다.
+        // 예: ./gradlew :app:installDebug -Ppickme.serverUrl=http://10.0.2.2:3000
+        val serverUrl = providers.gradleProperty("pickme.serverUrl").orElse("").get()
+        buildConfigField("String", "SERVER_URL", "\"$serverUrl\"")
     }
 
     buildTypes {
@@ -35,6 +41,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {
@@ -61,6 +68,13 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.pleos.navihelper)
     implementation(libs.pleos.vehicle)
+    // 실서버 연동 (data/remote에서만 import)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.socket.io.client) {
+        // Android에 org.json이 있다
+        exclude(group = "org.json", module = "json")
+    }
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
@@ -73,6 +87,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.okhttp.mockwebserver)
 }
 
 /**

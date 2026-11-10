@@ -26,9 +26,12 @@ sealed interface HomeAction {
     data class PickStore(val store: StoreSummary) : HomeAction
 
     data class PickMenu(val menu: MenuOption) : HomeAction
+
+    /** 메뉴가 3개보다 많을 때 「다른 메뉴 보기」 */
+    data object NextMenuPage : HomeAction
 }
 
-/** 선택 목록은 버튼으로 최대 3개까지 보여 준다 (Figma는 2개) */
+/** 선택 목록은 버튼으로 한 번에 3개까지 보여 준다 (Figma는 2개). 메뉴가 더 많으면 「다른 메뉴 보기」로 넘긴다 */
 const val MAX_CHOICES = 3
 
 /** V01-E 등록 내역 없음 (Figma 2:36477). 「등록과 변경은 주차 상태에서」라 주행 중에는 누를 수 없다 */
@@ -69,25 +72,38 @@ fun pickStoreMessage(stores: List<StoreOnRoute>, drive: DriveContext) = MessageU
     tone = MessageTone.Choice,
     title = "가는 길의 매장을\n선택해 주세요",
     lead = "현재 경로에서 이용할 수 있는 매장이에요.\n선택 후 메뉴를 확인해요.",
-    actions = choices(stores, drive, { "${it.store.name} · 도착 ${it.etaMinutes}분" }) { HomeAction.PickStore(it.store) },
+    actions = choices(stores, drive, ::storeChoiceLabel) { HomeAction.PickStore(it.store) },
 )
 
 /** V01-N 메뉴 선택 (Figma 2:36612). 예: "아이스 아메리카노 · 4,500원" */
-fun pickMenuMessage(store: StoreSummary, menus: List<MenuOption>, drive: DriveContext) = MessageUiState(
+fun pickMenuMessage(store: StoreSummary, menus: List<MenuOption>, drive: DriveContext, page: Int = 0) = MessageUiState(
     eyebrow = null,
     tone = MessageTone.Choice,
     title = "예약할 메뉴를\n선택해 주세요",
     lead = "${Formats.storeLine(store)}\n주차 중 등록 메뉴를 선택해요.",
-    actions = choices(menus, drive, { "${it.name} · ${it.price.format()}" }) { HomeAction.PickMenu(it) },
+    actions = choices(
+        items = menus.drop(page * MAX_CHOICES),
+        drive = drive,
+        label = { "${it.name} · ${it.price.format()}" },
+        more = if (menus.size > MAX_CHOICES) MessageAction("다른 메뉴 보기", Basic, HomeAction.NextMenuPage) else null,
+    ) { HomeAction.PickMenu(it) },
 )
+
+/** 예: "양재 DT점 · 도착 6분". 남은 시간을 모르면 거리: "판교점 · 0.6km" */
+fun storeChoiceLabel(store: StoreOnRoute): String {
+    val detail = store.etaMinutes?.let { "도착 ${it}분" }
+        ?: store.distanceM?.let { String.format(java.util.Locale.ROOT, "%.1fkm", it / 1000.0) }
+    return listOfNotNull(store.store.name, detail).joinToString(" · ")
+}
 
 /** 첫 항목은 채움, 나머지는 기본, 마지막에 「이전으로」. 주행 중에는 항목을 누를 수 없다 */
 private fun <T> choices(
     items: List<T>,
     drive: DriveContext,
     label: (T) -> String,
+    more: MessageAction<HomeAction>? = null,
     action: (T) -> HomeAction,
 ): List<MessageAction<HomeAction>> =
     items.take(MAX_CHOICES).mapIndexed { index, item ->
         MessageAction(label(item), parkedOnly(if (index == 0) Filled else Basic, drive.allowsDetail), action(item))
-    } + MessageAction("이전으로", Basic, HomeAction.Back)
+    } + listOfNotNull(more) + MessageAction("이전으로", Basic, HomeAction.Back)

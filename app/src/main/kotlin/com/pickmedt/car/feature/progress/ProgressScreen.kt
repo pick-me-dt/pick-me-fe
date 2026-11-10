@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +24,7 @@ import com.pickmedt.car.ui.component.StepIndicator
 import com.pickmedt.car.ui.theme.PickmeColors
 import com.pickmedt.car.ui.theme.PickmeType
 import com.pickmedt.car.ui.theme.designDp
+import com.pickmedt.car.ui.theme.designSp
 
 /** 주문 단계에 따라 바뀌는 진행 화면 (V03·V04·V05·V07, V06-C·D·E) */
 @Composable
@@ -82,7 +85,14 @@ private fun ArrivalBody(state: ProgressUiState.Arrival) {
                 is PickupNumber -> {
                     Text("픽업 주문번호", style = PickmeType.regular26x140, color = PickmeColors.TextSecondary)
                     Row(Modifier.height(200.designDp)) {
-                        Text(headline.number, style = PickmeType.bold100x130, color = PickmeColors.TextPrimary, modifier = Modifier.alignByBaseline())
+                        // 서버 주문번호가 길면(예: "MOCK-CDB5BE39") 한 줄 안에서 글자를 줄인다. Figma 예시 "P-021"은 그대로 100
+                        BasicText(
+                            text = headline.number,
+                            style = PickmeType.bold100x130.copy(color = PickmeColors.TextPrimary),
+                            maxLines = 1,
+                            autoSize = TextAutoSize.StepBased(minFontSize = 40.designSp, maxFontSize = 100.designSp),
+                            modifier = Modifier.alignByBaseline(),
+                        )
                     }
                     Text(headline.guide, style = PickmeType.regular24x140, color = PickmeColors.TextSecondary)
                 }

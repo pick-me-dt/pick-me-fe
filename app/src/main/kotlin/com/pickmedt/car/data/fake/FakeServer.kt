@@ -16,6 +16,7 @@ import com.pickmedt.car.core.model.PickupTiming
 import com.pickmedt.car.core.model.QuickOrder
 import com.pickmedt.car.core.model.StoreSummary
 import com.pickmedt.car.core.model.toOrderLine
+import com.pickmedt.car.core.rule.pickupTiming
 import com.pickmedt.car.core.time.Clock
 import com.pickmedt.car.data.order.Quote
 import com.pickmedt.car.data.order.QuoteIssue
@@ -236,19 +237,8 @@ class FakeServer(
 
     // ── 내부 ────────────────────────────────
 
-    private fun timingFor(order: Order, etaSec: Int): PickupTiming {
-        val now = clock.now()
-        val entrance = now.plusSeconds(etaSec.toLong())
-        val pickup = entrance.plus(afterEntrance)
-        val startedPickup = pickupAtPrepStart
-        val previous = order.timing
-        // 제조를 시작했으면 추천을 고정하고 늦어진 시간만 계산한다 (2차 기획 §3, §5)
-        if (startedPickup != null && previous != null) {
-            val delaySec = maxOf(0L, Duration.between(startedPickup, pickup).seconds).toInt()
-            return PickupTiming(entrance, pickup, previous.recommendedStartAt, delaySec, now)
-        }
-        return PickupTiming(entrance, pickup, pickup.minus(prepTime), delaySec = 0, etaReceivedAt = now)
-    }
+    private fun timingFor(order: Order, etaSec: Int): PickupTiming =
+        pickupTiming(clock.now(), etaSec, afterEntrance, prepTime, order.timing, pickupAtPrepStart)
 
     private fun move(from: OrderStage, to: OrderStage) {
         val order = expect(from)

@@ -32,7 +32,7 @@ sealed interface HomeStep {
     data class PickStore(val stores: List<StoreOnRoute>) : HomeStep
 
     /** V01-N */
-    data class PickMenu(val store: StoreSummary, val menus: List<MenuOption>) : HomeStep
+    data class PickMenu(val store: StoreSummary, val menus: List<MenuOption>, val page: Int = 0) : HomeStep
 
     /** V02(문제 없음), V02-SO·PC·CL(quote.issue) */
     data class Confirm(val quote: Quote, val submitting: Boolean = false) : HomeStep
@@ -88,6 +88,14 @@ class HomeController(
         val current = state.value as? HomeStep.PickMenu ?: return
         quick = runCatching { orders.saveQuickOrder(current.store, menu) }.getOrNull() ?: return
         showStart()
+    }
+
+    /** 「다른 메뉴 보기」: 다음 메뉴 묶음, 마지막 다음은 처음 */
+    fun nextMenuPage() {
+        val current = state.value as? HomeStep.PickMenu ?: return
+        val pages = (current.menus.size + MAX_CHOICES - 1) / MAX_CHOICES
+        if (pages <= 1) return
+        state.value = current.copy(page = (current.page + 1) % pages)
     }
 
     /** 「이전으로」: 메뉴 → 매장 → 시작. V01-NO·V02 예외의 「시작으로」도 시작으로 간다 */

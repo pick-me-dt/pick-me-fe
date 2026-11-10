@@ -27,6 +27,8 @@ import com.pickmedt.car.core.model.OrderStage
 import com.pickmedt.car.core.rule.resolveDriveContext
 import com.pickmedt.car.data.order.OrderRepository
 import com.pickmedt.car.data.settings.UserSettingsRepository
+import com.pickmedt.car.data.remote.RemoteDevTools
+import com.pickmedt.car.demo.DemoAction
 import com.pickmedt.car.demo.DemoPanel
 import com.pickmedt.car.feature.home.HomeAction
 import com.pickmedt.car.feature.home.HomeController
@@ -73,6 +75,8 @@ import com.pickmedt.car.ui.theme.DESIGN_WIDTH
 import com.pickmedt.car.ui.theme.PickmeColors
 import com.pickmedt.car.ui.theme.PickmeTheme
 import com.pickmedt.car.ui.theme.ProvideDesignScale
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -110,7 +114,8 @@ fun AppRoot(container: AppContainer) {
     LaunchedEffect(launchStep) {
         if (launchStep == LaunchStep.Splash) {
             delay(SPLASH_MILLIS)
-            launch.load()
+            // load()가 단계를 바꾸면 이 효과는 취소된다. 조회가 같이 취소되지 않게 AppRoot 범위에서 실행한다
+            scope.launch { launch.load() }
         }
     }
     val homeVisible = launchStep == LaunchStep.Done && order == null
@@ -163,6 +168,9 @@ fun AppRoot(container: AppContainer) {
             },
             onReloadHome = { scope.launch { home.load() } },
             modifier = modifier,
+            serverActions = container.serverDev?.let { dev ->
+                serverDemoActions(dev, container.orderRepository, scope, onReloadHome = { home.load() })
+            },
         )
     }
 
@@ -188,6 +196,46 @@ fun AppRoot(container: AppContainer) {
 
 /** 시연 컨트롤을 앱 영역 옆에 둘 최소 폭 */
 private val SIDE_PANEL_MIN_WIDTH = 360.dp
+
+/**
+ * 실서버 시연 버튼. 1차 기획 서버에는 직원 수락이 없어 「다음 단계」로 RESERVED → SENT(매장 전송)를 넘긴다.
+ * 제조 시작·준비 완료·수령은 매장 대시보드(서버 /dashboard/)에서 누른다. 결과는 logcat(태그 PickmeRemote)
+ */
+private fun serverDemoActions(
+    dev: RemoteDevTools,
+    orders: OrderRepository,
+    scope: CoroutineScope,
+    onReloadHome: suspend () -> Unit,
+): List<DemoAction> {
+    fun launch(label: String, block: suspend () -> Unit): Result<Unit> {
+        scope.launch {
+            runCatching { block() }.onFailure { Log.w("PickmeRemote", "$label 실패: ${it.message}") }
+        }
+        return Result.success(Unit)
+    }
+    return listOf(
+        "다음 단계" to {
+            val orderId = orders.currentOrder.value?.id
+            if (orderId == null) {
+                Result.failure(IllegalStateException("진행 중 주문이 없어요"))
+            } else {
+                launch("다음 단계") {
+                    dev.advance(orderId)
+                    orders.refresh()
+                }
+            }
+        },
+        "새로고침" to { launch("새로고침") { orders.refresh() } },
+        "서버 초기화" to {
+            launch("서버 초기화") {
+                dev.reset()
+                orders.refresh()
+                orders.clearFinished()
+                onReloadHome()
+            }
+        },
+    )
+}
 
 private class HomeEntry {
     var findStores = false
@@ -278,6 +326,7 @@ private fun HomeRoute(home: HomeController, drive: DriveContext) {
             HomeAction.Back -> home.back()
             is HomeAction.PickStore -> scope.launch { home.pickStore(action.store) }
             is HomeAction.PickMenu -> scope.launch { home.pickMenu(action.menu) }
+            HomeAction.NextMenuPage -> home.nextMenuPage()
         }
     }
     when (val current = step) {
@@ -291,7 +340,7 @@ private fun HomeRoute(home: HomeController, drive: DriveContext) {
         HomeStep.NoRoute -> MessageScreen(noRouteMessage(), onHomeAction)
         HomeStep.NoStore -> MessageScreen(noStoreMessage(), onHomeAction)
         is HomeStep.PickStore -> MessageScreen(pickStoreMessage(current.stores, drive), onHomeAction)
-        is HomeStep.PickMenu -> MessageScreen(pickMenuMessage(current.store, current.menus, drive), onHomeAction)
+        is HomeStep.PickMenu -> MessageScreen(pickMenuMessage(current.store, current.menus, drive, current.page), onHomeAction)
         is HomeStep.Confirm -> {
             // 같은 견적 화면에서 다시 눌러도 주문 한 건으로 처리되게 키를 유지한다 (2차 기획 §5)
             val reserveKey = remember(current.quote) { UUID.randomUUID().toString() }

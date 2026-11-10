@@ -57,6 +57,15 @@ class HomeControllerTest {
         assertEquals("따뜻한 아메리카노", start.quick.lines.single().name)
     }
 
+    @Test fun `다른 메뉴 보기는 다음 묶음, 마지막 다음은 처음`() = runTest {
+        controller.load()
+        controller.changeStoreAndMenu()
+        controller.pickStore(SampleData.seocho)
+        controller.nextMenuPage()
+        // 메뉴가 2개라 묶음이 하나뿐이면 그대로
+        assertEquals(0, (controller.step.value as HomeStep.PickMenu).page)
+    }
+
     @Test fun `이전으로는 한 단계씩 돌아간다`() = runTest {
         controller.load()
         controller.changeStoreAndMenu()

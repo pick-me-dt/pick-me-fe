@@ -19,7 +19,7 @@ app/src/main/kotlin/com/pickmedt/car/
 │  ├─ settings/ UserSettingsRepository: 정보 이용 동의, 차량번호
 │  ├─ fake/     가짜 서버·가짜 매장 목록·메모리 설정 (실서버 연동 전 개발·시연·테스트용)
 │  ├─ local/    기기 저장 (SharedPreferences 설정)
-│  └─ remote/   실서버 연동 (Retrofit·Socket.IO) — 11/13 예정
+│  └─ remote/   실서버 연동 (OkHttp·kotlinx.serialization·Socket.IO). 1차 기획 서버 기준, 2차 기획과 다른 점은 앱에서 메움
 ├─ platform/   차량 플랫폼 (Pleos SDK·AAOS Car API)
 │  ├─ drive/   기어·속도·주행 규제 신호
 │  │  ├─ fake/ 모의 신호
@@ -80,8 +80,8 @@ Pleos SDK(`ai.pleos.*`)와 AAOS Car API(`android.car.*`)는 `platform/` 아래�
 
 | 인터페이스 | 지금 구현 | 다음 구현 |
 | --- | --- | --- |
-| `OrderRepository` | `data/fake/FakeOrderRepository` | `data/remote` (서버 2차 기획 반영 후) |
-| `CatalogRepository` | `data/fake/FakeCatalog` | `data/remote` (매장·메뉴 API 확정 후) |
+| `OrderRepository` | 빌드 옵션 `-Ppickme.serverUrl`이 있으면 `data/remote/RemoteOrderRepository`, 없으면 `data/fake/FakeOrderRepository` | 서버가 2차 기획을 반영하면 상태 대응표·타이밍 계산 정리 ([실서버 테스트](docs/plans/2026-11-10-server-e2e.md)) |
+| `CatalogRepository` | 같은 기준으로 `data/remote/RemoteCatalog` / `data/fake/FakeCatalog` | — |
 | `UserSettingsRepository` | `data/local/PrefsUserSettings` (테스트는 `data/fake/InMemoryUserSettings`) | 차량번호 서버 등록 API가 정해지면 함께 저장 |
 | `DriveSignalSource` | 차량(AAOS): `platform/drive/car/CarDriveSignalSource`, 그 밖: `platform/drive/fake/FakeDriveSignalSource` | — |
 | `EtaSource` | 차량: `NaviSeededEtaSource`(실제 내비 첫 값 + 모의 감소), 그 밖: `platform/navi/scripted/ScriptedEtaSource` | 실제 위치가 움직이는 환경(실차·모의 주행)에서는 `PleosNavi`만 사용 |

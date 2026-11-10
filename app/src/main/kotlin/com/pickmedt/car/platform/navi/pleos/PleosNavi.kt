@@ -4,6 +4,7 @@ import ai.pleos.playground.navi.constants.NaviErrorCode
 import ai.pleos.playground.navi.constants.NaviMode
 import ai.pleos.playground.navi.constants.NavigationStatus
 import ai.pleos.playground.navi.constants.RouteOption
+import ai.pleos.playground.navi.data.CurrentLocationInfo
 import ai.pleos.playground.navi.data.DestinationInfo
 import ai.pleos.playground.navi.data.NavigationScreenRequest
 import ai.pleos.playground.navi.data.RouteInfo
@@ -14,6 +15,7 @@ import android.content.Context
 import android.util.Log
 import com.pickmedt.car.core.model.EtaOrigin
 import com.pickmedt.car.core.model.EtaReading
+import com.pickmedt.car.core.model.GeoPoint
 import com.pickmedt.car.core.model.RouteSnapshot
 import com.pickmedt.car.core.time.Clock
 import com.pickmedt.car.platform.navi.EtaSource
@@ -45,6 +47,7 @@ class PleosNavi(context: Context, private val clock: Clock) : RouteSource, EtaSo
 
     private val routeStates = answers<RouteStateInfo>()
     private val destinations = answers<DestinationInfo>()
+    private val locations = answers<CurrentLocationInfo>()
 
     private val listener = object : NaviHelperEventListener {
         override fun onRouteStateInfo(info: RouteStateInfo) {
@@ -55,6 +58,11 @@ class PleosNavi(context: Context, private val clock: Clock) : RouteSource, EtaSo
         override fun onDestinationInfo(info: DestinationInfo) {
             log("목적지 name=${info.name} remainTime=${info.remainTime}s remainDistance=${info.remainDistance}m")
             destinations.tryEmit(info)
+        }
+
+        override fun onCurrentLocationInfo(info: CurrentLocationInfo) {
+            log("현재 위치 lat=${info.latitude} lng=${info.longitude}")
+            locations.tryEmit(info)
         }
 
         override fun onRoutingCompleted() = log("경로 탐색 완료")
@@ -79,8 +87,12 @@ class PleosNavi(context: Context, private val clock: Clock) : RouteSource, EtaSo
     override suspend fun currentRoute(): RouteSnapshot? {
         if (!isGuiding()) return null
         val destination = ask(destinations) { navi.getDestinationInfo() }
-        return RouteSnapshot(destinationName = destination?.name?.takeIf { it.isNotBlank() })
+        return RouteSnapshot(destinationName = destination?.name?.takeIf { it.isNotBlank() }, origin = currentLocation())
     }
+
+    /** 지금 차량 위치 (내비 기준). 모르면 null */
+    suspend fun currentLocation(): GeoPoint? =
+        ask(locations) { navi.getCurrentLocationInfo() }?.let { GeoPoint(it.latitude, it.longitude) }
 
     /** V01-R 「내비게이션 열기」 */
     override fun openNavigation() {

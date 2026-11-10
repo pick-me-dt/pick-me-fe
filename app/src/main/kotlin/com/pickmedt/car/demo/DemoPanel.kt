@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.pickmedt.car.core.model.Gear
 
-private typealias DemoAction = Pair<String, () -> Result<Unit>>
+typealias DemoAction = Pair<String, () -> Result<Unit>>
 
 private const val COLUMNS = 4
 
@@ -33,6 +33,8 @@ private const val COLUMNS = 4
  * 버튼이 많아 묶음(시작·홈·예약, 매장, 이동)으로 나눠 보여 준다.
  * 화면 흐름을 바꾸는 조작(앱 다시 시작, 설정 열기, 홈 다시 불러오기)은 AppRoot가 넘겨준다.
  * 촬영할 때 앱 영역을 넓게 쓰도록 접을 수 있다.
+ * 실서버를 쓰면([serverActions]가 있으면) 가짜 서버용 버튼 대신 서버 개발 API 버튼을 보여 준다.
+ * 매장 쪽 조작은 매장 대시보드(서버 /dashboard/)에서 한다.
  */
 @Composable
 fun DemoPanel(
@@ -41,12 +43,15 @@ fun DemoPanel(
     onOpenSettings: () -> Unit,
     onReloadHome: () -> Unit,
     modifier: Modifier = Modifier,
+    serverActions: List<DemoAction>? = null,
 ) {
-    var message by remember { mutableStateOf("시연 컨트롤 · 실제 주문/차량 연동 없음") }
+    var message by remember {
+        mutableStateOf(if (serverActions != null) "시연 컨트롤 · 실서버 연결" else "시연 컨트롤 · 실제 주문/차량 연동 없음")
+    }
     var group by remember { mutableIntStateOf(0) }
     var expanded by remember { mutableStateOf(true) }
     val ok = Result.success(Unit)
-    val groups: List<Pair<String, List<DemoAction>>> = listOf(
+    val fakeGroups: List<Pair<String, List<DemoAction>>> = listOf(
         "시작·홈·예약" to listOf(
             "첫 실행" to { controller.firstRun().onSuccess { onRestartApp() } },
             "앱 다시 시작" to { onRestartApp(); ok },
@@ -81,6 +86,20 @@ fun DemoPanel(
             "내비 조회" to controller::naviQuery,
         ),
     )
+    val groups = if (serverActions == null) {
+        fakeGroups
+    } else {
+        // 실서버: 가짜 서버용 버튼(조회 실패·품절·매장 조작 등)은 빼고, 서버 개발 API와 이동 조작만 둔다
+        listOf(
+            "시작" to listOf(
+                "첫 실행" to { controller.firstRun().onSuccess { onRestartApp() } },
+                "앱 다시 시작" to { onRestartApp(); ok },
+                "설정 열기" to { onOpenSettings(); ok },
+            ),
+            "서버" to serverActions,
+            fakeGroups.last(),
+        )
+    }
     fun run(label: String, action: () -> Result<Unit>) {
         message = action().fold({ "$label 완료" }, { "$label 실패: ${it.message}" })
     }

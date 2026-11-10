@@ -3,6 +3,8 @@ package com.pickmedt.car.app
 import android.app.Application
 import android.content.pm.PackageManager
 import com.pickmedt.car.core.time.Clock
+import com.pickmedt.car.BuildConfig
+import com.pickmedt.car.data.local.DeviceIdentity
 import com.pickmedt.car.data.local.PrefsUserSettings
 import com.pickmedt.car.platform.drive.car.CarDriveSignalSource
 import com.pickmedt.car.platform.navi.pleos.PleosNavi
@@ -22,7 +24,10 @@ class PickmeApplication : Application() {
         val automotive = packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
         val carDrive = if (automotive) CarDriveSignalSource(this).also { it.start() } else null
         val carNavi = if (automotive) PleosNavi(this, Clock.System).also { it.start() } else null
-        container = AppContainer(appScope, PrefsUserSettings(this), carDrive, carNavi)
+        // 빌드 옵션 -Ppickme.serverUrl이 있으면 실서버에 붙는다
+        val server = BuildConfig.SERVER_URL.takeIf { it.isNotBlank() }
+            ?.let { AppContainer.ServerConfig(it, DeviceIdentity.id(this)) }
+        container = AppContainer(appScope, PrefsUserSettings(this), carDrive, carNavi, server)
         container.etaReporter.start()
     }
 }

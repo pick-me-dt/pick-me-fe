@@ -34,8 +34,9 @@ object Formats {
     fun orderLine(lines: List<OrderLine>, displayNo: String?): String =
         listOfNotNull(lines.firstOrNull()?.option, displayNo?.let { "주문 $it" }).joinToString("  ·  ")
 
-    /** 예: "픽미 커피 · 양재 DT점" */
-    fun storeLine(store: StoreSummary): String = "${store.brand} · ${store.name}"
+    /** 예: "픽미 커피 · 양재 DT점". 브랜드가 없으면 매장 이름만 */
+    fun storeLine(store: StoreSummary): String =
+        listOf(store.brand, store.name).filter { it.isNotBlank() }.joinToString(" · ")
 
     /** 단계 이름. 단계 표시(StepIndicator)와 같은 말을 쓴다 */
     fun stageLabel(stage: OrderStage): String = when (stage) {

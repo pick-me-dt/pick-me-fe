@@ -69,6 +69,14 @@ class MessagesTest {
         assertEquals(listOf("아이스 아메리카노 · 4,500원", "따뜻한 아메리카노 · 4,500원", "이전으로"), state.actions.map { it.label })
     }
 
+    @Test fun `V01-N 메뉴가 3개보다 많으면 다른 메뉴 보기로 다음 묶음을 본다`() {
+        val menus = (1..7).map { SampleData.icedAmericano.copy(id = "m$it", name = "메뉴$it") }
+        val first = pickMenuMessage(SampleData.yangjae, menus, DriveContext.PARKED, page = 0).actions.map { it.label }
+        assertEquals(listOf("메뉴1 · 4,500원", "메뉴2 · 4,500원", "메뉴3 · 4,500원", "다른 메뉴 보기", "이전으로"), first)
+        val last = pickMenuMessage(SampleData.yangjae, menus, DriveContext.PARKED, page = 2).actions.map { it.label }
+        assertEquals(listOf("메뉴7 · 4,500원", "다른 메뉴 보기", "이전으로"), last)
+    }
+
     @Test fun `V01-N 주행 중에는 메뉴를 고를 수 없고 이전으로만 누를 수 있다`() {
         val actions = pickMenuMessage(SampleData.yangjae, listOf(SampleData.icedAmericano), DriveContext.DRIVING).actions
         assertEquals(listOf(Disabled, Basic), actions.map { it.style })

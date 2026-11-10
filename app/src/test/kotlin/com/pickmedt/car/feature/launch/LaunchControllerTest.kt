@@ -7,6 +7,7 @@ import com.pickmedt.car.data.fake.SampleData
 import com.pickmedt.car.data.settings.UserSettings
 import com.pickmedt.car.testing.MutableClock
 import com.pickmedt.car.testing.kst
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -31,6 +32,18 @@ class LaunchControllerTest {
         assertEquals(LaunchStep.Failed, controller.step.value)
         controller.load()
         assertEquals(LaunchStep.Welcome, controller.step.value)
+    }
+
+    @Test fun `조회가 취소되면 실행 실패로 보지 않는다`() = runTest {
+        val slow = object : com.pickmedt.car.data.order.OrderRepository by orders {
+            override suspend fun refresh() = kotlinx.coroutines.awaitCancellation()
+        }
+        val cancellable = LaunchController(settings, slow)
+        val job = launch { cancellable.load() }
+        testScheduler.runCurrent()
+        job.cancel()
+        testScheduler.runCurrent()
+        assertEquals(LaunchStep.Loading, cancellable.step.value)
     }
 
     @Test fun `진행 중 주문이 있으면 진행 주문 복귀`() = runTest {
