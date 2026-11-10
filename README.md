@@ -7,7 +7,7 @@
 
 ## 현재 상태
 
-화면 구현 전 뼈대 단계입니다. 서버와 차량 신호는 가짜 구현으로 동작하고, 앱 아래 시연 컨트롤로 매장 수락·제조·ETA 변경·기어 변경을 재현합니다.
+시연 흐름 화면(V01 시작 → V02 예약 확인 → V03 매장 확인 중 → V04 제조 대기·제조 중·준비 완료 → V05 제조 전·후 지연 → V07 수령 완료)을 구현했습니다. 서버와 차량 신호는 가짜 구현으로 동작하고, 앱 아래 시연 컨트롤로 매장 수락·제조·ETA 변경·기어 변경을 재현합니다.
 
 ## 실행 방법
 
@@ -23,6 +23,16 @@
 ```bash
 ./gradlew :app:testDebugUnitTest
 ```
+
+화면 스크린샷(840×1184, `app/build/outputs/roborazzi/`):
+
+```bash
+./gradlew :app:recordRoborazziDebug
+```
+
+## 사용한 글꼴
+
+[Asta Sans](https://github.com/42dot/Asta-Sans) (42dot, SIL Open Font License 1.1). 라이선스 전문은 `design/licenses/AstaSans-OFL.txt`에 있습니다.
 
 ## 테스트 환경
 

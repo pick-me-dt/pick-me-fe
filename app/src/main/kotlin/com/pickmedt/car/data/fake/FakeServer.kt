@@ -105,7 +105,10 @@ class FakeServer(
 
     fun markReady() = move(from = PREPARING, to = READY)
 
-    fun pickUp() = move(from = READY, to = PICKED_UP)
+    fun pickUp() {
+        val order = expect(READY)
+        state.value = order.copy(stage = PICKED_UP, pickedUpAt = clock.now())
+    }
 
     fun approveCancel() {
         val order = expect(CANCEL_REQUESTED)

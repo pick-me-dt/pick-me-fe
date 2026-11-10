@@ -25,11 +25,29 @@ app/src/main/kotlin/com/pickmedt/car/
 │     ├─ scripted/ 모의 ETA
 │     └─ pleos/    NaviHelper 구현 — 게이트 G3 이후
 ├─ feature/    화면 (Figma 화면 코드 단위, 4장)
+│              <화면>Screen(상태 없는 Compose) + toXxxUiState()(순수 함수, 단위 테스트)
 ├─ demo/       시연 컨트롤 (Figma 프로토타입 하단 영역)
-└─ ui/         공용 테마·컴포넌트
+└─ ui/
+   ├─ theme/     색 토큰, Asta Sans 글자 스타일, DesignScale(Figma 840 폭 비율)
+   ├─ component/ Pleos 공식 컴포넌트(ivi_title·ivi_basic_button)와 픽미 공용 컴포넌트
+   └─ text/      조사·시각·금액 문구
 
-app/src/debug/   debug 빌드 전용 설정 (로컬 서버 평문 HTTP 허용)
-app/src/test/    단위 테스트. main과 같은 패키지 구조, 공용 도구는 testing/
+app/src/main/res/  drawable(Figma SVG를 변환한 벡터), font(Asta Sans)
+app/src/debug/     debug 빌드 전용 설정 (로컬 서버 평문 HTTP 허용)
+app/src/test/      단위 테스트. main과 같은 패키지 구조, 공용 도구는 testing/, 화면 스크린샷은 screenshot/
+design/            Figma SVG 원본(figma-assets/), 글꼴 라이선스(licenses/)
+```
+
+### 크기 단위
+
+화면 수치는 Figma 앱 영역(840×1184) 값을 그대로 `designDp`·`designSp`로 씁니다(예: `40.designDp`). `ProvideDesignScale`이 실제 창 폭 ÷ 840 비율을 계산해 늘이거나 줄입니다.
+
+### 화면 확인
+
+에뮬레이터 없이 JVM에서 화면을 840×1184 PNG로 그립니다(Roborazzi). 결과는 `app/build/outputs/roborazzi/`에 생깁니다.
+
+```bash
+./gradlew :app:recordRoborazziDebug
 ```
 
 인터페이스는 영역 바로 아래(`data/order`, `platform/drive`, `platform/navi`)에 두고, 구현은 하위 패키지(`fake`, `remote`, `car`, `pleos`, `scripted`)에 둡니다.

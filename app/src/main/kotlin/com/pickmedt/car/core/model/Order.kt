@@ -22,7 +22,13 @@ enum class OrderStage {
     val isActive: Boolean get() = this != PICKED_UP && this != CANCELLED
 }
 
-data class StoreSummary(val id: String, val name: String)
+data class StoreSummary(
+    val id: String,
+    /** 예: "양재 DT점" */
+    val name: String,
+    /** 예: "픽미 커피" */
+    val brand: String,
+)
 
 data class OrderLine(
     val menuItemId: String,
@@ -31,6 +37,8 @@ data class OrderLine(
     val option: String?,
     val unitPrice: Money,
     val qty: Int,
+    /** 수량 단위. 예: "잔", "개" */
+    val unit: String = "잔",
 ) {
     val price: Money get() = unitPrice * qty
 }
@@ -60,6 +68,8 @@ data class Order(
     val cancelReason: CancelReason?,
     /** 직전 취소 요청을 매장이 거절했는지 (Figma V06-E) */
     val cancelRejected: Boolean = false,
+    /** 수령 완료 시각 (Figma V07) */
+    val pickedUpAt: Instant? = null,
 ) {
     val total: Money get() = lines.fold(Money(0)) { sum, line -> sum + line.price }
 }

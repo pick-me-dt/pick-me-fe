@@ -1,0 +1,27 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="&#236;&#187;&#181; + &#237;&#148;&#189;&#236;&#151;&#133; &#237;&#153;&#148;&#236;&#130;&#180;&#237;&#145;&#156; / &#235;&#184;&#140;&#235;&#158;&#156;&#235;&#147;&#156; &#235;&#178;&#161;&#237;&#132;&#176;" clip-path="url(#clip0_0_460)">
+<path id="Vector" d="M61.1111 0H18.8889C8.45684 0 0 8.45684 0 18.8889V61.1111C0 71.5432 8.45684 80 18.8889 80H61.1111C71.5432 80 80 71.5432 80 61.1111V18.8889C80 8.45684 71.5432 0 61.1111 0Z" fill="url(#paint0_linear_0_460)"/>
+<g id="Vector_2">
+<path d="M42.2222 13.8889V25Z" fill="black"/>
+<path d="M42.2222 13.8889V25" stroke-width="4.44444" stroke-linecap="round" stroke="white"/>
+</g>
+<g id="Vector_3">
+<path d="M22.7778 26.6667H57.2222Z" fill="black"/>
+<path d="M22.7778 26.6667H57.2222" stroke-width="5" stroke-linecap="round" stroke="white"/>
+</g>
+<path id="Vector_4" d="M25 32.2222H55L51.1111 61.6667H28.8889L25 32.2222Z" fill="white"/>
+<g id="Vector_5">
+<path d="M33.3333 45.5556H46.6667ZM41.6667 40.5556L46.6667 45.5556L41.6667 50.5556" fill="black"/>
+<path d="M33.3333 45.5556H46.6667M41.6667 50.5556L46.6667 45.5556L41.6667 40.5556" stroke-width="3.88889" stroke-linecap="round" stroke-linejoin="round" stroke="#ED6A40"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_460" x1="10" y1="0" x2="67.7778" y2="80" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FF9254"/>
+<stop offset="1" stop-color="#EF633A"/>
+</linearGradient>
+<clipPath id="clip0_0_460">
+<rect width="80" height="80" fill="white"/>
+</clipPath>
+</defs>
+</svg>

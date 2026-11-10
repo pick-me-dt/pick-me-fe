@@ -91,6 +91,7 @@ class FakeServerTest {
         server.markReady()
         server.pickUp()
         assertEquals(OrderStage.PICKED_UP, stage())
+        assertEquals(kst("08:02"), server.order.value!!.pickedUpAt)
     }
 
     @Test fun `매장이 거절하면 취소 완료이고 사유는 매장 거절`() {

@@ -1,0 +1,104 @@
+package com.pickmedt.car.feature.progress
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.text.style.TextOverflow
+import com.pickmedt.car.R
+import com.pickmedt.car.feature.progress.ArrivalHeadline.Eta
+import com.pickmedt.car.feature.progress.ArrivalHeadline.PickupNumber
+import com.pickmedt.car.ui.component.CroppedImage
+import com.pickmedt.car.ui.component.OrderSummaryCard
+import com.pickmedt.car.ui.component.PleosButton
+import com.pickmedt.car.ui.component.ScreenFrame
+import com.pickmedt.car.ui.component.StepIndicator
+import com.pickmedt.car.ui.theme.PickmeColors
+import com.pickmedt.car.ui.theme.PickmeType
+import com.pickmedt.car.ui.theme.designDp
+
+/** 진행 화면 V03·V04·V05·V07 */
+@Composable
+fun ProgressScreen(
+    state: ProgressUiState,
+    onAction: (ProgressAction.Kind) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ScreenFrame(
+        modifier = modifier,
+        actions = {
+            PleosButton(state.action.label, state.action.style, onClick = { onAction(state.action.kind) })
+        },
+    ) {
+        when (state) {
+            is ProgressUiState.Card -> CardBody(state)
+            is ProgressUiState.Arrival -> ArrivalBody(state)
+            is ProgressUiState.Other -> Text(state.message, style = PickmeType.bold48x140, color = PickmeColors.TextPrimary)
+        }
+    }
+}
+
+/** V03·V07 (Figma 노드 2:36063, 2:36282) */
+@Composable
+private fun CardBody(state: ProgressUiState.Card) {
+    Text(state.eyebrow, style = PickmeType.bold26x145, color = PickmeColors.TextSecondary)
+    Text(state.title, style = PickmeType.headline, color = PickmeColors.TextPrimary)
+    OrderSummaryCard(state.card.title, state.card.menu, state.card.detail)
+    Text(state.lead, style = PickmeType.regular28x145, color = PickmeColors.TextSecondary)
+    Text(state.note, style = PickmeType.regular24x145, color = PickmeColors.TextSecondary)
+}
+
+/** V04·V05 (Figma 노드 2:36089) */
+@Composable
+private fun ArrivalBody(state: ProgressUiState.Arrival) {
+    Text(state.movingTo, style = PickmeType.regular28x140, color = PickmeColors.TextSecondary)
+    Text(state.title, style = PickmeType.bold48x140, color = PickmeColors.TextPrimary)
+    Row(
+        Modifier.fillMaxWidth().height(280.designDp),
+        horizontalArrangement = Arrangement.spacedBy(22.designDp),
+    ) {
+        Column(Modifier.width(410.designDp).height(280.designDp).clipToBounds()) {
+            when (val headline = state.headline) {
+                is Eta -> {
+                    Text("매장 도착까지", style = PickmeType.regular26x140, color = PickmeColors.TextSecondary)
+                    Row(Modifier.height(200.designDp), horizontalArrangement = Arrangement.spacedBy(12.designDp)) {
+                        Text(headline.minutes, style = PickmeType.bold166x190, color = PickmeColors.TextPrimary, modifier = Modifier.alignByBaseline())
+                        Text("분", style = PickmeType.bold48x140, color = PickmeColors.TextSecondary, modifier = Modifier.alignByBaseline())
+                    }
+                    Text(
+                        headline.line,
+                        style = if (headline.largeLine) PickmeType.regular28x140 else PickmeType.regular24x140,
+                        color = PickmeColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                is PickupNumber -> {
+                    Text("픽업 주문번호", style = PickmeType.regular26x140, color = PickmeColors.TextSecondary)
+                    Row(Modifier.height(200.designDp)) {
+                        Text(headline.number, style = PickmeType.bold100x130, color = PickmeColors.TextPrimary, modifier = Modifier.alignByBaseline())
+                    }
+                    Text(headline.guide, style = PickmeType.regular24x140, color = PickmeColors.TextSecondary)
+                }
+            }
+        }
+        CroppedImage(
+            drawable = R.drawable.img_coffee_visual,
+            boxWidth = 260, boxHeight = 280,
+            imageWidth = 632.4f, imageHeight = 297.5f,
+            offsetX = -185, offsetY = -4,
+        )
+    }
+    StepIndicator(current = state.step)
+    Column(verticalArrangement = Arrangement.spacedBy(10.designDp)) {
+        Text(state.menuLine, style = PickmeType.bold32x140, color = PickmeColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(state.orderLine, style = PickmeType.regular26x140, color = PickmeColors.TextSecondary, maxLines = 1)
+    }
+}

@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // JVM 스크린샷 테스트 (./gradlew :app:recordRoborazziDebug)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -34,6 +36,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        // Robolectric 스크린샷 테스트가 글꼴·드로어블 리소스를 읽도록
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 kotlin {
@@ -56,9 +63,16 @@ dependencies {
     implementation(libs.pleos.vehicle)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
 }
 
 /**

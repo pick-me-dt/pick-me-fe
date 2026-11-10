@@ -9,7 +9,7 @@ import com.pickmedt.car.core.model.StoreSummary
 object SampleData {
     const val PLATE_NUMBER = "12가3456"
 
-    val yangjae = StoreSummary(id = "00000000-0000-4000-8000-000000000101", name = "양재 DT점")
+    val yangjae = StoreSummary(id = "00000000-0000-4000-8000-000000000101", name = "양재 DT점", brand = "픽미 커피")
 
     val usualIcedAmericano = QuickOrder(
         id = "fake-quick-usual",

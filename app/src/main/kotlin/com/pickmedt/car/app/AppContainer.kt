@@ -15,7 +15,7 @@ import kotlinx.coroutines.CoroutineScope
  * 수동 의존성 주입. 가짜/실서버, 모의/실차 구현은 여기서만 고른다.
  * 지금은 서버 연동(11/13)과 에뮬레이터 게이트 전이라 모두 가짜·모의 구현이다.
  */
-class AppContainer(appScope: CoroutineScope, clock: Clock = Clock.System) {
+class AppContainer(appScope: CoroutineScope, val clock: Clock = Clock.System) {
     private val fakeServer = FakeServer(clock)
     private val fakeDrive = FakeDriveSignalSource()
     private val scriptedEta = ScriptedEtaSource(clock)
