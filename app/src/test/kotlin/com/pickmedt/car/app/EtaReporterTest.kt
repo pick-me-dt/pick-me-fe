@@ -42,6 +42,42 @@ class EtaReporterTest {
         assertEquals(2, orders.reports.size)
     }
 
+    @Test fun `새 주문마다 ETA 측정을 새로 시작한다`() = runTest {
+        var trips = 0
+        val counting = object : com.pickmedt.car.platform.navi.EtaSource {
+            override suspend fun read() = eta.read()
+            override fun startNewTrip() {
+                trips++
+            }
+        }
+        EtaReporter(orders, counting, backgroundScope).start()
+        orders.currentOrder.value = testOrder(OrderStage.WAITING_TO_PREPARE, id = "order-1")
+        runCurrent()
+        advanceTimeBy(30_000)
+        runCurrent()
+        orders.currentOrder.value = testOrder(OrderStage.WAITING_TO_PREPARE, id = "order-2")
+        runCurrent()
+        assertEquals(2, trips)
+    }
+
+    @Test fun `연결 끊김 후 다시 시작해도 같은 주문이면 측정을 이어 간다`() = runTest {
+        var trips = 0
+        val counting = object : com.pickmedt.car.platform.navi.EtaSource {
+            override suspend fun read() = eta.read()
+            override fun startNewTrip() {
+                trips++
+            }
+        }
+        val reporter = EtaReporter(orders, counting, backgroundScope)
+        reporter.start()
+        orders.currentOrder.value = testOrder(OrderStage.WAITING_TO_PREPARE)
+        runCurrent()
+        reporter.stop()
+        reporter.start()
+        runCurrent()
+        assertEquals(1, trips)
+    }
+
     @Test fun `주문이 끝나면 보내지 않는다`() = runTest {
         EtaReporter(orders, eta, backgroundScope).start()
         orders.currentOrder.value = testOrder(OrderStage.WAITING_TO_PREPARE)

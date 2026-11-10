@@ -6,7 +6,7 @@ import com.pickmedt.car.data.fake.FakeCatalog
 import com.pickmedt.car.data.fake.FakeServer
 import com.pickmedt.car.data.settings.UserSettingsRepository
 import com.pickmedt.car.platform.drive.fake.FakeDriveSignalSource
-import com.pickmedt.car.platform.navi.pleos.PleosNaviProbe
+import com.pickmedt.car.platform.navi.pleos.PleosNavi
 import com.pickmedt.car.platform.navi.scripted.ScriptedEtaSource
 import com.pickmedt.car.platform.navi.scripted.ScriptedRouteSource
 import kotlinx.coroutines.CoroutineScope
@@ -24,10 +24,11 @@ class DemoController(
     private val drive: FakeDriveSignalSource?,
     private val eta: ScriptedEtaSource,
     private val catalog: FakeCatalog,
-    private val routes: ScriptedRouteSource,
+    /** 실제 내비를 쓰면 null. 이때 경로는 내비에서 정한다 */
+    private val routes: ScriptedRouteSource?,
     private val settings: UserSettingsRepository,
-    /** 차량에서만 있다. 게이트 G3 확인용 */
-    private val naviProbe: PleosNaviProbe?,
+    /** 차량에서만 있다 */
+    private val navi: PleosNavi?,
     private val reportEtaNow: suspend () -> Unit,
     private val pauseEtaReports: () -> Unit,
     private val resumeEtaReports: () -> Unit,
@@ -74,11 +75,13 @@ class DemoController(
 
     // ── 내비 확인 (게이트 G3) ─────────────────
 
-    /** 양재점으로 실제 내비 경로를 요청한다. 결과는 logcat 태그 PickmeNavi */
-    fun naviRoute() = runCatching { checkNotNull(naviProbe) { "차량에서만 쓸 수 있어요" }.requestRouteToYangjae() }
+    /** 양재점(서버 시드 좌표, pick-me-be src/seed/seed.ts:37)으로 실제 내비 경로를 요청한다 */
+    fun naviRoute() = runCatching { requireNavi().requestRoute(YANGJAE_LAT, YANGJAE_LNG, "픽미 DT 양재점") }
 
-    /** 실제 내비의 경로 상태와 남은 시간을 조회한다. 결과는 logcat 태그 PickmeNavi */
-    fun naviQuery() = runCatching { checkNotNull(naviProbe) { "차량에서만 쓸 수 있어요" }.query() }
+    /** 실제 내비의 경로 상태와 남은 시간을 logcat(태그 PickmeNavi)에 남긴다 */
+    fun naviQuery() = runCatching { requireNavi().logStatus() }
+
+    private fun requireNavi() = checkNotNull(navi) { "차량에서만 쓸 수 있어요" }
 
     // ── 시작 (V00) ──────────────────────────
 
@@ -100,9 +103,11 @@ class DemoController(
     fun clearQuickOrders() = runCatching { server.clearQuickOrders() }
 
     /** V01-R */
-    fun removeRoute() = runCatching { routes.setRoute(null) }
+    fun removeRoute() = runCatching {
+        checkNotNull(routes) { "실제 내비 사용 중 · 내비에서 안내를 종료하세요" }.setRoute(null)
+    }
 
-    fun restoreRoute() = runCatching { routes.setRoute(ScriptedRouteSource.DEFAULT) }
+    fun restoreRoute() = runCatching { routes?.setRoute(ScriptedRouteSource.DEFAULT) ?: Unit }
 
     /** V01-NO */
     fun noStores() = runCatching { catalog.noStores = true }
@@ -120,15 +125,21 @@ class DemoController(
     fun clearIssues() = runCatching {
         server.clearQuoteIssues()
         catalog.noStores = false
-        routes.setRoute(ScriptedRouteSource.DEFAULT)
+        routes?.setRoute(ScriptedRouteSource.DEFAULT)
+        Unit
     }
 
     fun reset() = runCatching {
         server.resetScenario()
         catalog.noStores = false
-        routes.setRoute(ScriptedRouteSource.DEFAULT)
+        routes?.setRoute(ScriptedRouteSource.DEFAULT)
         eta.clear()
         drive?.shift(Gear.PARK)
         resumeEtaReports()
+    }
+
+    private companion object {
+        const val YANGJAE_LAT = 37.4705
+        const val YANGJAE_LNG = 127.035
     }
 }

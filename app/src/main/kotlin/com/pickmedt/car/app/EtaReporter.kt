@@ -25,6 +25,9 @@ class EtaReporter(
 ) {
     private var job: Job? = null
 
+    /** 마지막으로 ETA 측정을 시작한 주문. 연결 끊김 후 다시 시작해도 같은 주문이면 측정을 이어 간다 */
+    private var tripOrderId: String? = null
+
     fun start() {
         if (job != null) return
         job = scope.launch {
@@ -33,6 +36,10 @@ class EtaReporter(
                 .distinctUntilChanged()
                 .collectLatest { orderId ->
                     if (orderId == null) return@collectLatest
+                    if (orderId != tripOrderId) {
+                        tripOrderId = orderId
+                        eta.startNewTrip()
+                    }
                     while (true) {
                         report(orderId)
                         delay(interval.toMillis())

@@ -25,8 +25,8 @@ app/src/main/kotlin/com/pickmedt/car/
 │  │  ├─ fake/ 모의 신호
 │  │  └─ car/  AAOS Car API 구현 (기어·속도·주행 규제)
 │  └─ navi/    매장 입구까지 남은 시간(ETA), 내비게이션 경로
-│     ├─ scripted/ 모의 ETA·모의 경로
-│     └─ pleos/    NaviHelper — 지금은 게이트 G3 확인용(PleosNaviProbe)
+│     ├─ scripted/ 모의 ETA·모의 경로, 실측 첫 값으로 시작하는 모의 ETA(NaviSeededEtaSource)
+│     └─ pleos/    NaviHelper 구현(PleosNavi): 경로 유무·남은 시간·내비 열기
 ├─ feature/    화면 (Figma 화면 코드 단위, 4장)
 │              <화면>Screen(상태 없는 Compose) + toXxxUiState()·xxxMessage()(순수 함수, 단위 테스트)
 │              여러 화면을 오가는 흐름은 <영역>Controller(단계 StateFlow, 단위 테스트)
@@ -84,8 +84,8 @@ Pleos SDK(`ai.pleos.*`)와 AAOS Car API(`android.car.*`)는 `platform/` 아래�
 | `CatalogRepository` | `data/fake/FakeCatalog` | `data/remote` (매장·메뉴 API 확정 후) |
 | `UserSettingsRepository` | `data/local/PrefsUserSettings` (테스트는 `data/fake/InMemoryUserSettings`) | 차량번호 서버 등록 API가 정해지면 함께 저장 |
 | `DriveSignalSource` | 차량(AAOS): `platform/drive/car/CarDriveSignalSource`, 그 밖: `platform/drive/fake/FakeDriveSignalSource` | — |
-| `EtaSource` | `platform/navi/scripted/ScriptedEtaSource` | `platform/navi/pleos` (NaviHelper) |
-| `RouteSource` | `platform/navi/scripted/ScriptedRouteSource` | `platform/navi/pleos` (NaviHelper) |
+| `EtaSource` | 차량: `NaviSeededEtaSource`(실제 내비 첫 값 + 모의 감소), 그 밖: `platform/navi/scripted/ScriptedEtaSource` | 실제 위치가 움직이는 환경(실차·모의 주행)에서는 `PleosNavi`만 사용 |
+| `RouteSource` | 차량: `platform/navi/pleos/PleosNavi`, 그 밖: `platform/navi/scripted/ScriptedRouteSource` | — |
 
 ## 4. 기능 패키지와 Figma 화면
 
