@@ -1,6 +1,7 @@
 package com.pickmedt.car.demo
 
 import com.pickmedt.car.core.model.Gear
+import com.pickmedt.car.core.model.GeoPoint
 
 /** 화면 흐름을 바꾸는 시연 조작. AppRoot가 받아서 처리한다 */
 enum class DemoUiEvent { RESTART_APP, OPEN_SETTINGS, RELOAD_HOME }
@@ -88,7 +89,7 @@ class DemoCommands(
         add(Command("reconnect", "reconnect", "연결 복구") { controller.reconnect() })
         add(Command("park", "park", "P단") { controller.shift(Gear.PARK) })
         add(Command("drive", "drive", "D단") { controller.shift(Gear.DRIVE) })
-        add(Command("navi-route", "navi-route", "내비 경로(양재)") { controller.naviRoute() })
+        add(Command("navi-route", "navi-route [위도,경도]", "내비 경로(양재)") { arg -> point(arg).mapCatching { controller.naviRoute(it).getOrThrow() } })
         add(Command("navi-status", "navi-status", "내비 조회") { controller.naviQuery() })
         add(Command("reset", "reset", "초기화") { controller.reset().onSuccess { controller.requestUi(DemoUiEvent.RELOAD_HOME) } })
         add(Command("panel", "panel on|off", "시연 컨트롤 보이기·숨기기") { arg ->
@@ -116,6 +117,19 @@ class DemoCommands(
     }
 
     private fun ui(event: DemoUiEvent): Result<Unit> = Result.success(controller.requestUi(event))
+
+    /** 「37.4199,127.0958」 → 좌표. 없으면 null(원래 양재 좌표) */
+    private fun point(arg: String?): Result<GeoPoint?> {
+        if (arg == null) return Result.success(null)
+        val parts = arg.split(',').map { it.trim().toDoubleOrNull() }
+        val lat = parts.getOrNull(0)
+        val lng = parts.getOrNull(1)
+        return if (parts.size == 2 && lat != null && lng != null && lat in -90.0..90.0 && lng in -180.0..180.0) {
+            Result.success(GeoPoint(lat, lng))
+        } else {
+            Result.failure(IllegalArgumentException("좌표는 위도,경도로 넣어 주세요. 예: navi-route 37.4199,127.0958"))
+        }
+    }
 
     private fun minutes(arg: String?): Result<Int> =
         arg?.toIntOrNull()?.takeIf { it >= 0 }?.let { Result.success(it) }

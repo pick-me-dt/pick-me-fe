@@ -1,6 +1,7 @@
 package com.pickmedt.car.demo
 
 import com.pickmedt.car.core.model.Gear
+import com.pickmedt.car.core.model.GeoPoint
 import com.pickmedt.car.core.model.Money
 import com.pickmedt.car.data.fake.FakeCatalog
 import com.pickmedt.car.data.fake.FakeServer
@@ -104,8 +105,15 @@ class DemoController(
 
     // ── 내비 확인 (게이트 G3) ─────────────────
 
-    /** 양재점(서버 시드 이름·좌표, pick-me-be 2차 src/seed/seed.ts)으로 실제 내비 경로를 요청한다 */
-    fun naviRoute() = runCatching { requireNavi().requestRoute(YANGJAE_LAT, YANGJAE_LNG, "픽미 양재 DT점") }
+    /**
+     * 양재점(서버 시드 이름·좌표, pick-me-be 2차 src/seed/seed.ts)으로 실제 내비 경로를 요청한다.
+     * [at]을 주면 그 좌표로 요청한다. 에뮬레이터 위치는 판교에 고정이라, 시연에서는 서버 개발 API
+     * (POST /v1/dev/stores/relocate)로 매장을 차량 근처로 옮긴 뒤 옮긴 좌표를 넘긴다.
+     */
+    fun naviRoute(at: GeoPoint? = null) = runCatching {
+        val target = at ?: GeoPoint(YANGJAE_LAT, YANGJAE_LNG)
+        requireNavi().requestRoute(target.lat, target.lng, "픽미 양재 DT점")
+    }
 
     /** 실제 내비의 경로 상태와 남은 시간을 logcat(태그 PickmeNavi)에 남긴다 */
     fun naviQuery() = runCatching { requireNavi().logStatus() }

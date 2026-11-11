@@ -82,7 +82,7 @@ fun DemoPanel(
             "연결 복구" to controller::reconnect,
             "P단" to { controller.shift(Gear.PARK) },
             "D단" to { controller.shift(Gear.DRIVE) },
-            "내비 경로(양재)" to controller::naviRoute,
+            "내비 경로(양재)" to { controller.naviRoute() },
             "내비 조회" to controller::naviQuery,
         ),
     )

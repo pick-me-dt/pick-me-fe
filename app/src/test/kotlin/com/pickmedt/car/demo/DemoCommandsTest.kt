@@ -93,6 +93,14 @@ class DemoCommandsTest {
         assertTrue(help.contains("panel on|off"))
     }
 
+    @Test fun `내비 경로는 좌표를 위도,경도로 받는다`() {
+        val bad = commands.run("navi-route", "37.42")
+        assertTrue(bad, bad.startsWith("내비 경로(양재) 실패: 좌표는 위도,경도로"))
+        // 좌표는 맞고, 이 테스트에는 실제 내비가 없어 경로 요청 단계에서 실패한다
+        assertEquals("내비 경로(양재) 실패: 차량에서만 쓸 수 있어요", commands.run("navi-route", "37.4199, 127.0958"))
+        assertEquals("내비 경로(양재) 실패: 차량에서만 쓸 수 있어요", commands.run("navi-route", null))
+    }
+
     @Test fun `실서버 모드에서는 같은 이름의 명령을 서버로 보낸다`() {
         val called = mutableListOf<String>()
         val ok = Result.success(Unit)
