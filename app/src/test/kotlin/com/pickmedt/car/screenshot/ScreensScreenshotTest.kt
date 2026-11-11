@@ -49,23 +49,34 @@ import com.pickmedt.car.testing.testOrder
 import com.pickmedt.car.testing.testTiming
 import com.pickmedt.car.ui.theme.PickmeTheme
 import com.pickmedt.car.ui.theme.ProvideDesignScale
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestName
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
  * Figma 앱 영역(840×1184)과 같은 크기로 화면을 그려 PNG로 남긴다.
+ * 가로 앱 영역(1700×1184)은 [LandscapeScreensScreenshotTest]가 같은 화면을 다시 그린다.
  * 기록: ./gradlew :app:recordRoborazziDebug → app/build/outputs/roborazzi/
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w840dp-h1184dp-mdpi", sdk = [35], application = Application::class)
-class ScreensScreenshotTest {
+open class ScreensScreenshotTest {
     private val now = kst("08:02")
 
-    private fun capture(content: @Composable () -> Unit) = captureRoboImage {
-        PickmeTheme { ProvideDesignScale(Modifier.fillMaxSize()) { content() } }
+    /** true면 넓은 영역에서 가로 2단 배치로 그린다 */
+    protected open val landscape = false
+
+    @get:Rule val testName = TestName()
+
+    /** 하위 클래스(가로)와 파일 이름이 겹치지 않게 실행 중인 클래스 이름으로 저장한다 */
+    private fun capture(content: @Composable () -> Unit) = captureRoboImage(
+        filePath = "build/outputs/roborazzi/${this::class.qualifiedName}.${testName.methodName}.png",
+    ) {
+        PickmeTheme { ProvideDesignScale(Modifier.fillMaxSize(), allowLandscape = landscape) { content() } }
     }
 
     private fun progress(order: Order, baseline: PickupTiming? = null, at: java.time.Instant = now) = capture {
