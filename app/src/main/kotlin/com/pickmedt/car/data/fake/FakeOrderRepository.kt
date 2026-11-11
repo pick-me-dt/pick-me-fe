@@ -2,6 +2,7 @@ package com.pickmedt.car.data.fake
 
 import com.pickmedt.car.core.model.EtaReading
 import com.pickmedt.car.core.model.MenuOption
+import com.pickmedt.car.core.model.Money
 import com.pickmedt.car.core.model.Order
 import com.pickmedt.car.core.model.QuickOrder
 import com.pickmedt.car.core.model.StoreSummary
@@ -19,8 +20,8 @@ class FakeOrderRepository(private val server: FakeServer) : OrderRepository {
 
     override suspend fun quote(quickOrderId: String): Quote = server.quote(quickOrderId)
 
-    override suspend fun reserve(quickOrderId: String, idempotencyKey: String): Order =
-        server.reserve(quickOrderId, idempotencyKey)
+    override suspend fun reserve(quickOrderId: String, idempotencyKey: String, expectedTotal: Money?): Order =
+        server.reserve(quickOrderId, idempotencyKey, expectedTotal)
 
     override suspend fun reportEta(orderId: String, reading: EtaReading) = server.reportEta(orderId, reading.etaSec)
 

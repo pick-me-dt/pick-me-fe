@@ -187,6 +187,31 @@ class FakeServerTest {
         assertTrue(runCatching { server.refresh() }.isSuccess)
     }
 
+    @Test fun `견적 뒤 가격이 바뀌면 예약이 막히고 새 견적을 돌려준다`() {
+        val quote = server.quote(usual)
+        server.changePrice(Money(4_800))
+        val changed = runCatching { server.reserve(usual, "key-1", expectedTotal = quote.total) }.exceptionOrNull()
+        val newQuote = (changed as com.pickmedt.car.data.order.QuoteChangedException).quote
+        assertEquals(QuoteIssue.PRICE_CHANGED, newQuote.issue)
+        assertEquals(Money(4_500), newQuote.previousTotal)
+        assertEquals(Money(4_800), newQuote.total)
+        assertNull(server.order.value)
+    }
+
+    @Test fun `품절이면 예약이 막힌다`() {
+        server.markSoldOut()
+        val changed = runCatching { server.reserve(usual, "key-1") }.exceptionOrNull()
+        assertEquals(QuoteIssue.SOLD_OUT, (changed as com.pickmedt.car.data.order.QuoteChangedException).quote.issue)
+    }
+
+    @Test fun `수락 전 취소는 매장 승인 없이 바로 취소된다`() {
+        val order = reserved()
+        server.requestCancel(order.id)
+        assertEquals(OrderStage.CANCELLED, stage())
+        assertEquals(CancelReason.OTHER, server.order.value!!.cancelReason)
+        assertEquals("주문이 취소됐어요.", server.order.value!!.cancelNote)
+    }
+
     @Test fun `초기화하면 주문이 없다`() {
         reserved()
         server.reset()

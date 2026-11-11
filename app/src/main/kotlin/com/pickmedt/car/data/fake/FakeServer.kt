@@ -19,6 +19,7 @@ import com.pickmedt.car.core.model.toOrderLine
 import com.pickmedt.car.core.rule.pickupTiming
 import com.pickmedt.car.core.time.Clock
 import com.pickmedt.car.data.order.Quote
+import com.pickmedt.car.data.order.QuoteChangedException
 import com.pickmedt.car.data.order.QuoteIssue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -97,10 +98,16 @@ class FakeServer(
         }
     }
 
-    fun reserve(quickOrderId: String, idempotencyKey: String): Order {
+    /** 2차 서버처럼 품절·가격 변경이면 예약을 막고 새 견적을 돌려준다 ([QuoteChangedException]) */
+    fun reserve(quickOrderId: String, idempotencyKey: String, expectedTotal: Money? = null): Order {
         val existingId = orderIdByKey[idempotencyKey]
         state.value?.let { if (it.id == existingId) return it }
         check(state.value?.stage?.isActive != true) { "진행 중인 주문이 있습니다" }
+        val current = quote(quickOrderId)
+        if (current.issue == QuoteIssue.SOLD_OUT || current.issue == QuoteIssue.STORE_CLOSED) throw QuoteChangedException(current)
+        if (expectedTotal != null && expectedTotal != current.total) {
+            throw QuoteChangedException(current.copy(issue = QuoteIssue.PRICE_CHANGED, previousTotal = expectedTotal))
+        }
 
         val quick = quickOrder(quickOrderId)
         val lines = currentLines(quick)
@@ -128,9 +135,14 @@ class FakeServer(
         state.value = order.copy(timing = timingFor(order, etaSec))
     }
 
+    /** 2차 서버처럼 수락 전이면 바로 취소, 수락 후면 취소 확인 중 */
     fun requestCancel(orderId: String) {
         val order = current(orderId)
         check(order.stage.isActive && order.stage != CANCEL_REQUESTED) { "취소를 요청할 수 없는 상태입니다: ${order.stage}" }
+        if (order.stage == AWAITING_STORE) {
+            state.value = order.copy(stage = CANCELLED, cancelReason = CancelReason.OTHER, cancelNote = "주문이 취소됐어요.", cancelledAt = clock.now())
+            return
+        }
         stageBeforeCancel = order.stage
         state.value = order.copy(stage = CANCEL_REQUESTED, cancelRejected = false)
     }

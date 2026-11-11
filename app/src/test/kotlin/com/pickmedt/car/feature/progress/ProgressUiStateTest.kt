@@ -37,8 +37,8 @@ class ProgressUiStateTest {
         )
     }
 
-    @Test fun `V03-T 응답 지연 - 요청 후 60초가 지나면 예약 상태 확인을 안내한다`() {
-        val order = testOrder(OrderStage.AWAITING_STORE).copy(requestedAt = kst("08:01"))
+    @Test fun `V03-T 응답 지연 - 요청 후 2분이 지나면 예약 상태 확인을 안내한다`() {
+        val order = testOrder(OrderStage.AWAITING_STORE).copy(requestedAt = kst("08:00"))
         assertEquals(
             ProgressUiState.Card(
                 variant = ProgressVariant.STORE_SLOW,
@@ -233,6 +233,19 @@ class ProgressUiStateTest {
         }
         assertEquals(ProgressVariant.WAITING, presenter.present(order.copy(timing = step), DriveContext.DRIVING, now).variant)
         assertEquals(ProgressVariant.WAITING_DELAYED, presenter.present(order.copy(timing = testTiming("08:09")), DriveContext.DRIVING, now).variant)
+    }
+
+    @Test fun `서버가 응답 지연이라고 하면 시간과 상관없이 응답 지연`() {
+        val order = testOrder(OrderStage.AWAITING_STORE).copy(requestedAt = now, acceptOverdue = true)
+        assertEquals(ProgressVariant.STORE_SLOW, toProgressUiState(order, DriveContext.PARKED, now, null).variant)
+        val notYet = order.copy(requestedAt = kst("07:00"), acceptOverdue = false)
+        assertEquals(ProgressVariant.AWAITING_STORE, toProgressUiState(notYet, DriveContext.PARKED, now, null).variant)
+    }
+
+    @Test fun `매장 승인이 아닌 취소는 사유 문구를 보여 준다`() {
+        val order = testOrder(OrderStage.CANCELLED).copy(cancelReason = CancelReason.OTHER, cancelNote = "매장에서 미수령으로 주문을 종료했어요.")
+        val state = toProgressUiState(order, DriveContext.PARKED, now, null) as ProgressUiState.Card
+        assertEquals("매장에서 미수령으로 주문을 종료했어요.", state.lead)
     }
 
     @Test fun `주문이 바뀌면 기준을 새로 잡는다`() {

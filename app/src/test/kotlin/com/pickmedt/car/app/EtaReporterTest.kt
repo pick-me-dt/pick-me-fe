@@ -107,7 +107,8 @@ class EtaReporterTest {
         override suspend fun quickOrders(): List<QuickOrder> = emptyList()
         override suspend fun saveQuickOrder(store: StoreSummary, menu: MenuOption): QuickOrder = error("사용하지 않음")
         override suspend fun quote(quickOrderId: String): Quote = error("사용하지 않음")
-        override suspend fun reserve(quickOrderId: String, idempotencyKey: String): Order = error("사용하지 않음")
+        override suspend fun reserve(quickOrderId: String, idempotencyKey: String, expectedTotal: com.pickmedt.car.core.model.Money?): Order =
+            error("사용하지 않음")
         override suspend fun requestCancel(orderId: String) = Unit
         override suspend fun refresh() = Unit
         override fun clearFinished() = Unit

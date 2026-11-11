@@ -58,7 +58,6 @@ class AppContainer(
     val orderRepository: OrderRepository = session?.let {
         RemoteOrderRepository(
             session = it,
-            clock = clock,
             scope = appScope,
             position = { carNavi?.currentLocation() },
             speedKmh = { driveSignalSource.signals.value.speedKmh },

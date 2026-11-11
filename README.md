@@ -54,7 +54,7 @@ Figma 프로토타입의 차량 화면을 모두 구현했습니다.
 ./gradlew :app:installDebug
 ```
 
-실서버(로컬 백엔드)에 붙여 실행하려면 서버 주소를 넘깁니다. 백엔드 띄우는 법과 테스트 결과는 [실서버 전체 흐름 테스트](docs/plans/2026-11-10-server-e2e.md)에 있습니다.
+실서버(로컬 백엔드, 2차 기획 반영 `pick-me-be` `1ef2b1c`)에 붙여 실행하려면 서버 주소를 넘깁니다. 백엔드 띄우는 법과 테스트 결과는 [실서버 전체 흐름 테스트 (2차 서버)](docs/plans/2026-11-11-server-e2e-v2.md)에 있습니다. 실서버 모드에서도 `scripts/demo.sh`의 매장 명령(`accept`·`prepare` 등)을 같은 이름으로 씁니다.
 
 ```bash
 ./gradlew :app:installDebug -Ppickme.serverUrl=http://10.0.2.2:3000

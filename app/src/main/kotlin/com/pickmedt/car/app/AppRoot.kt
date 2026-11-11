@@ -160,7 +160,16 @@ fun AppRoot(container: AppContainer) {
             modifier = modifier,
             serverActions = container.serverDemo?.let { server ->
                 listOf(
-                    "다음 단계" to server::next,
+                    "매장 수락" to server::accept,
+                    "매장 거절" to { server.reject(null) },
+                    "제조 시작" to server::prepare,
+                    "준비 완료" to server::ready,
+                    "수령 완료" to server::pickup,
+                    "취소 승인" to server::approveCancel,
+                    "취소 거절" to server::rejectCancel,
+                    "메뉴 품절" to server::soldOut,
+                    "접수 종료" to server::closeStore,
+                    "조건 해제" to server::clearStore,
                     "새로고침" to server::refresh,
                     "서버 초기화" to { server.reset().onSuccess { scope.launch { home.load() } } },
                 )

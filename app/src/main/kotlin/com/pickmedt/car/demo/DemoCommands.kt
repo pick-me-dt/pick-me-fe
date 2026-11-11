@@ -5,12 +5,26 @@ import com.pickmedt.car.core.model.Gear
 /** 화면 흐름을 바꾸는 시연 조작. AppRoot가 받아서 처리한다 */
 enum class DemoUiEvent { RESTART_APP, OPEN_SETTINGS, RELOAD_HOME }
 
-/** 실서버 시연 조작. 구현은 app 계층이 실서버 개발 API로 만든다 */
+/**
+ * 실서버 시연 조작. 구현은 app 계층이 서버 개발 API와 매장 API(시드 직원 토큰)로 만든다.
+ * 서버 호출은 백그라운드로 보내므로, 성공은 「요청을 보냈다」는 뜻이다 (실패는 logcat)
+ */
 interface ServerDemoActions {
-    /** 진행 중 주문을 한 단계 넘긴다 (예약 직후면 매장 전송) */
+    /** 진행 중 주문을 한 단계 넘긴다 (수락 → 제조 시작 → 준비 완료 → 수령, 취소 확인 중이면 승인) */
     fun next(): Result<Unit>
     fun refresh(): Result<Unit>
     fun reset(): Result<Unit>
+    fun accept(): Result<Unit>
+    /** [reason]: SOLD_OUT·BUSY·CLOSED·OTHER */
+    fun reject(reason: String?): Result<Unit>
+    fun prepare(): Result<Unit>
+    fun ready(): Result<Unit>
+    fun pickup(): Result<Unit>
+    fun approveCancel(): Result<Unit>
+    fun rejectCancel(): Result<Unit>
+    fun soldOut(): Result<Unit>
+    fun closeStore(): Result<Unit>
+    fun clearStore(): Result<Unit>
 }
 
 /**
@@ -51,6 +65,19 @@ class DemoCommands(
             add(Command("cancel-ok", "cancel-ok", "취소 승인") { controller.approveCancel() })
             add(Command("cancel-no", "cancel-no", "취소 거절") { controller.rejectCancel() })
         } else {
+            // 가짜 서버와 같은 이름. 서버가 판단하거나 서버에 API가 없는 것은 이유를 돌려준다
+            add(Command("sold-out", "sold-out", "메뉴 품절") { server.soldOut() })
+            add(Command("price-up", "price-up", "가격 변경") { Result.failure(UnsupportedOperationException(NO_PRICE_API)) })
+            add(Command("closed", "closed", "접수 종료") { server.closeStore() })
+            add(Command("clear", "clear", "조건 해제") { server.clearStore() })
+            add(Command("accept", "accept", "매장 수락") { server.accept() })
+            add(Command("reject", "reject [사유]", "매장 거절") { arg -> server.reject(arg) })
+            add(Command("slow", "slow", "응답 지연") { Result.failure(UnsupportedOperationException(SLOW_BY_SERVER)) })
+            add(Command("prepare", "prepare", "제조 시작") { server.prepare() })
+            add(Command("ready", "ready", "준비 완료") { server.ready() })
+            add(Command("pickup", "pickup", "수령 완료") { server.pickup() })
+            add(Command("cancel-ok", "cancel-ok", "취소 승인") { server.approveCancel() })
+            add(Command("cancel-no", "cancel-no", "취소 거절") { server.rejectCancel() })
             add(Command("next", "next", "다음 단계") { server.next() })
             add(Command("refresh", "refresh", "새로고침") { server.refresh() })
             add(Command("server-reset", "server-reset", "서버 초기화") { server.reset().onSuccess { controller.requestUi(DemoUiEvent.RELOAD_HOME) } })
@@ -82,6 +109,11 @@ class DemoCommands(
     }
 
     fun help(): String = commands.joinToString("\n") { "${it.usage.padEnd(14)} ${it.label}" }
+
+    private companion object {
+        const val NO_PRICE_API = "실서버에는 가격을 바꾸는 API가 없어요 (가짜 서버에서만 시연)"
+        const val SLOW_BY_SERVER = "실서버는 예약 후 2분 동안 수락이 없으면 서버가 응답 지연으로 판단해요"
+    }
 
     private fun ui(event: DemoUiEvent): Result<Unit> = Result.success(controller.requestUi(event))
 

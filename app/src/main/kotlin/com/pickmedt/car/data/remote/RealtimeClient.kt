@@ -49,7 +49,14 @@ class RealtimeClient(
     private companion object {
         const val TAG = "PickmeRealtime"
 
-        /** 차량에 오는 이벤트 (pick-me-be src/realtime/realtime.service.ts:17-40, docs/LOCAL_DEV.md 6장) */
-        val VEHICLE_EVENTS = listOf("order.status_changed", "order.delayed", "queue.alert")
+        /** 차량에 오는 이벤트 (pick-me-be 2차 src/common/domain-events.ts, realtime.service.ts) */
+        val VEHICLE_EVENTS = listOf(
+            "order.status_changed",
+            "eta.updated",
+            "order.recommendation_changed",
+            "order.delayed",
+            "order.accept_overdue",
+            "order.lane_entered",
+        )
     }
 }

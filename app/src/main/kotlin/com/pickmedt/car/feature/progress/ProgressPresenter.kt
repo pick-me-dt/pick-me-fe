@@ -70,7 +70,7 @@ fun toProgressUiState(
 
     return when (order.stage) {
         OrderStage.AWAITING_STORE ->
-            if (isStoreResponseSlow(order.requestedAt, now)) storeSlow(card) else awaitingStore(card)
+            if (order.acceptOverdue ?: isStoreResponseSlow(order.requestedAt, now)) storeSlow(card) else awaitingStore(card)
 
         OrderStage.WAITING_TO_PREPARE ->
             if (isEtaLost(order.timing, now)) etaLost(order.timing!!, card) else waiting(order, drive, now, baseline)
@@ -155,7 +155,8 @@ private fun cancelled(order: Order, card: SummaryCardText) = ProgressUiState.Car
     eyebrow = "취소 완료",
     title = "예약이\n취소됐어요",
     card = card,
-    lead = "매장에서 취소를 승인했어요.",
+    // 매장이 취소 요청을 승인한 경우만 Figma 문구. 그 밖(수락 전 취소, 매장의 주문 종료 등)은 사유 문구를 보여 준다
+    lead = if (order.cancelReason == CancelReason.CANCEL_APPROVED) "매장에서 취소를 승인했어요." else order.cancelNote ?: "주문이 취소됐어요.",
     note = joinDot(order.displayNo?.let { "주문 $it" }, order.cancelledAt?.let { "취소 완료 ${Formats.clock(it)}" }),
     actions = listOf(ProgressAction("시작으로", PleosButtonStyle.Filled, Kind.FINISH)),
 )

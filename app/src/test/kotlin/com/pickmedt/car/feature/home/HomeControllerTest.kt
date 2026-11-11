@@ -93,6 +93,17 @@ class HomeControllerTest {
         assertEquals(SampleData.yangjae, (controller.step.value as HomeStep.PickMenu).store)
     }
 
+    @Test fun `예약 직전에 가격이 바뀌면 가격 변경 화면으로 바뀐다`() = runTest {
+        controller.load()
+        controller.reserve()
+        server.changePrice(Money(4_800))
+        controller.submit("key-1")
+        val confirm = controller.step.value as HomeStep.Confirm
+        assertEquals(QuoteIssue.PRICE_CHANGED, confirm.quote.issue)
+        assertEquals(Money(4_800), confirm.quote.total)
+        assertEquals(null, server.order.value)
+    }
+
     @Test fun `예약 요청을 보내면 주문이 생긴다`() = runTest {
         controller.load()
         controller.reserve()

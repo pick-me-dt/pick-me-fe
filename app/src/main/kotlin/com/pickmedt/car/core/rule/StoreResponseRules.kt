@@ -7,9 +7,10 @@ import java.time.Instant
 object StoreResponsePolicy {
     /**
      * 예약 요청 후 이 시간이 지나도 매장이 수락·거절하지 않으면 응답 지연으로 본다.
-     * 2차 기획에 기준 시간이 없어 임시값이다. 기획 확정 후 바꾼다 (백엔드 요청서 4장 3번).
+     * 2차 기획에 기준 시간이 없어 백엔드 기본값(2분, pick-me-be pickup-timing.ts ACCEPT_OVERDUE_SEC)에 맞췄다. 기획 확인 필요.
+     * 실서버는 이 값 대신 주문의 acceptOverdue를 쓴다.
      */
-    val SlowAfter: Duration = Duration.ofSeconds(60)
+    val SlowAfter: Duration = Duration.ofSeconds(120)
 }
 
 fun isStoreResponseSlow(requestedAt: Instant?, now: Instant): Boolean =

@@ -93,18 +93,35 @@ class DemoCommandsTest {
         assertTrue(help.contains("panel on|off"))
     }
 
-    @Test fun `실서버 모드에서는 가짜 서버용 명령 대신 서버 명령`() {
-        var nexted = false
+    @Test fun `실서버 모드에서는 같은 이름의 명령을 서버로 보낸다`() {
+        val called = mutableListOf<String>()
+        val ok = Result.success(Unit)
         val serverCommands = DemoCommands(
             controller,
             object : ServerDemoActions {
-                override fun next() = Result.success(Unit).also { nexted = true }
-                override fun refresh() = Result.success(Unit)
-                override fun reset() = Result.success(Unit)
+                override fun next() = ok.also { called += "next" }
+                override fun refresh() = ok
+                override fun reset() = ok
+                override fun accept() = ok.also { called += "accept" }
+                override fun reject(reason: String?) = ok.also { called += "reject:$reason" }
+                override fun prepare() = ok
+                override fun ready() = ok
+                override fun pickup() = ok
+                override fun approveCancel() = ok
+                override fun rejectCancel() = ok
+                override fun soldOut() = ok
+                override fun closeStore() = ok
+                override fun clearStore() = ok
             },
         )
-        assertEquals("모르는 명령: accept (help로 목록 확인)", serverCommands.run("accept", null))
+        assertEquals("매장 수락 완료", serverCommands.run("accept", null))
+        assertEquals("매장 거절 완료", serverCommands.run("reject", "SOLD_OUT"))
         assertEquals("다음 단계 완료", serverCommands.run("next", null))
-        assertTrue(nexted)
+        assertEquals(listOf("accept", "reject:SOLD_OUT", "next"), called)
+        // 가짜 서버(앱 안)에 직접 손대지 않는다
+        assertEquals(null, server.order.value)
+        // 서버에 API가 없는 조작은 이유를 알려 준다
+        assertTrue(serverCommands.run("price-up", null).startsWith("가격 변경 실패: 실서버에는"))
+        assertEquals("모르는 명령: no-route (help로 목록 확인)", serverCommands.run("no-route", null))
     }
 }

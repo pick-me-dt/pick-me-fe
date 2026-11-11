@@ -28,7 +28,7 @@ class RemoteCatalog(private val session: RemoteSession) : CatalogRepository {
     }.items.map { MenuOption(id = it.id, name = it.name, option = null, price = Money(it.price)) }
 
     companion object {
-        /** 서버 응답에 브랜드 이름이 없어 매장 이름(예: "픽미 DT 양재점")만 쓴다 */
+        /** 서버 응답에 브랜드 이름이 없어 매장 이름(예: "픽미 양재 DT점")만 쓴다 */
         const val BRAND = ""
 
         /** 경로상 매장 검색 반경. 서버 기본값을 쓰면 10km 거리의 양재점이 빠진다 (확인: 판교 근처 좌표) */

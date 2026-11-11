@@ -2,6 +2,7 @@ package com.pickmedt.car.data.order
 
 import com.pickmedt.car.core.model.EtaReading
 import com.pickmedt.car.core.model.MenuOption
+import com.pickmedt.car.core.model.Money
 import com.pickmedt.car.core.model.Order
 import com.pickmedt.car.core.model.QuickOrder
 import com.pickmedt.car.core.model.StoreSummary
@@ -24,12 +25,15 @@ interface OrderRepository {
     /** 예약 전 가격·품절 재확인 (2차 기획 §7) */
     suspend fun quote(quickOrderId: String): Quote
 
-    /** 예약. 같은 키로 다시 부르면 같은 주문을 돌려준다 (2차 기획 §5) */
-    suspend fun reserve(quickOrderId: String, idempotencyKey: String): Order
+    /**
+     * 예약. 같은 키로 다시 부르면 같은 주문을 돌려준다 (2차 기획 §5).
+     * [expectedTotal]은 사용자가 확인한 금액. 품절이거나 금액이 다르면 [QuoteChangedException]
+     */
+    suspend fun reserve(quickOrderId: String, idempotencyKey: String, expectedTotal: Money? = null): Order
 
     suspend fun reportEta(orderId: String, reading: EtaReading)
 
-    /** 취소 요청. 완료 여부는 매장 승인 후 currentOrder로 확인한다 */
+    /** 취소 요청. 수락 전이면 바로 취소, 수락 후면 매장 승인 후 currentOrder로 확인한다 */
     suspend fun requestCancel(orderId: String)
 
     /** 재연결·앱 복귀 시 서버 상태로 다시 맞춘다 */

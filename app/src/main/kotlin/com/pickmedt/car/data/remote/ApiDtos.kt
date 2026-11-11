@@ -46,57 +46,103 @@ data class MenuDto(val storeId: String, val storeName: String, val items: List<M
 data class OrderRequest(val storeId: String, val favoriteId: String? = null, val items: List<OrderLineDto>? = null)
 
 @Serializable
-data class ReserveRequest(
-    val source: String,
-    val storeId: String,
-    val favoriteId: String? = null,
-    val items: List<OrderLineDto>? = null,
+data class OrderItemDto(
+    val menuItemId: String,
+    val name: String,
+    val unitPrice: Int,
+    val qty: Int,
+    /** 견적에만 있다 */
+    val soldOut: Boolean = false,
 )
 
-@Serializable
-data class OrderItemDto(val menuItemId: String, val name: String, val unitPrice: Int, val qty: Int)
-
+/** 견적 (2차: available·soldOut, 매장 준비 시간·입구 이후 시간) */
 @Serializable
 data class QuoteDto(
     val storeId: String,
     val storeName: String,
     val items: List<OrderItemDto>,
     val totalAmount: Int,
-    val estPrepSec: Int = 0,
+    val available: Boolean = true,
+    val prepSec: Int? = null,
+    val afterEntrySec: Int? = null,
 )
 
 @Serializable
 data class OrderStoreDto(val id: String, val name: String, val lat: Double? = null, val lng: Double? = null)
 
+/** 서버가 계산한 제조 타이밍 (pick-me-be src/timing/pickup-timing.ts PickupTiming) */
+@Serializable
+data class TimingDto(
+    val etaSec: Int? = null,
+    val etaUpdatedAt: String? = null,
+    val etaStale: Boolean = false,
+    val entranceArrivalAt: String? = null,
+    val expectedPickupAt: String? = null,
+    val recommendedStartAt: String? = null,
+    val prepSec: Int? = null,
+    val afterEntrySec: Int? = null,
+    val delaySec: Int = 0,
+)
+
+@Serializable
+data class CancelRequestDto(val requestedAt: String? = null, val note: String? = null, val statusBefore: String? = null)
+
+/** 주문 (pick-me-be src/orders/order-view.ts toOrderView, 2차) */
 @Serializable
 data class OrderDto(
     val id: String,
+    val orderNo: String? = null,
     val status: String,
     val store: OrderStoreDto,
     val items: List<OrderItemDto>,
     val totalAmount: Int,
     val plateNumber: String? = null,
-    val estPrepSec: Int? = null,
     val externalOrderId: String? = null,
+    val timing: TimingDto? = null,
+    val acceptOverdue: Boolean = false,
     val createdAt: String? = null,
-    val sentAt: String? = null,
+    val acceptedAt: String? = null,
+    val rejectedAt: String? = null,
+    val rejectReason: String? = null,
+    val preparingAt: String? = null,
     val readyAt: String? = null,
     val pickedUpAt: String? = null,
+    val laneEnteredAt: String? = null,
+    val cancelRequest: CancelRequestDto? = null,
     val cancelledAt: String? = null,
     val cancelReason: String? = null,
+    val cancelNote: String? = null,
 )
 
 @Serializable
-data class ReserveResponseDto(val order: OrderDto, val confirmationReasons: List<String> = emptyList())
+data class ReserveRequest(
+    val storeId: String,
+    val favoriteId: String? = null,
+    val items: List<OrderLineDto>? = null,
+    val source: String = "SCREEN",
+    /** 사용자가 확인한 금액. 다르면 409 PRICE_CHANGED */
+    val expectedTotal: Int? = null,
+)
+
+@Serializable
+data class ReserveResponseDto(val order: OrderDto)
+
+/** 예약 409 본문: code(ACTIVE_ORDER_EXISTS·SOLD_OUT·PRICE_CHANGED)와 새 견적 */
+@Serializable
+data class ReserveConflictDto(val code: String? = null, val message: String? = null, val orderId: String? = null, val quote: QuoteDto? = null)
 
 @Serializable
 data class CancelRequest(val reason: String? = null)
 
+/** 텔레메트리 (2차: etaSec 필수, 위치·속도는 기록용 선택) */
 @Serializable
 data class TelemetryRequest(
-    val lat: Double,
-    val lng: Double,
-    val speedKmh: Double,
-    val etaSec: Int? = null,
+    val etaSec: Int,
+    val lat: Double? = null,
+    val lng: Double? = null,
+    val speedKmh: Double? = null,
     val gear: String? = null,
 )
+
+@Serializable
+data class OrderEnvelopeDto(val order: OrderDto)

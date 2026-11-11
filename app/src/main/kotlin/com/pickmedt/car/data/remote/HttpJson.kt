@@ -14,8 +14,13 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-/** 서버가 2xx가 아닌 응답을 준 경우. [code]는 서버 오류 코드(있으면) */
-class ApiException(val status: Int, val code: String?, message: String) : IOException("HTTP $status ${code.orEmpty()} $message".trim())
+/** 서버가 2xx가 아닌 응답을 준 경우. [code]는 서버 오류 코드(있으면), [body]는 응답 본문(JSON이면) */
+class ApiException(
+    val status: Int,
+    val code: String?,
+    message: String,
+    val body: JsonObject? = null,
+) : IOException("HTTP $status ${code.orEmpty()} $message".trim())
 
 /** 픽미 서버 REST 호출. JSON 본문을 주고받고, 토큰이 있으면 Bearer로 붙인다 */
 class HttpJson(
@@ -66,7 +71,7 @@ class HttpJson(
         val obj = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull()
         val code = obj?.get("code")?.jsonPrimitive?.contentOrNull
         val message = obj?.get("message")?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() }
-        return ApiException(status, code, message ?: text.take(200))
+        return ApiException(status, code, message ?: text.take(200), obj)
     }
 
     companion object {

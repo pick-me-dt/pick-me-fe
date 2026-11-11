@@ -76,6 +76,8 @@ data class Order(
     val cancelledAt: Instant? = null,
     /** 매장이 남긴 거절·취소 사유. 예: "주문량 증가" (Figma V03-R) */
     val cancelNote: String? = null,
+    /** 서버가 판단한 매장 응답 지연 (V03-T). null이면 서버 값이 없어 앱이 예약 시각으로 판단한다 */
+    val acceptOverdue: Boolean? = null,
 ) {
     val total: Money get() = lines.fold(Money(0)) { sum, line -> sum + line.price }
 }

@@ -7,6 +7,8 @@ import com.pickmedt.car.core.model.StoreSummary
 import com.pickmedt.car.data.catalog.CatalogRepository
 import com.pickmedt.car.data.order.OrderRepository
 import com.pickmedt.car.data.order.Quote
+import com.pickmedt.car.data.order.QuoteChangedException
+import kotlinx.coroutines.CancellationException
 import com.pickmedt.car.platform.navi.RouteSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -124,7 +126,17 @@ class HomeController(
         val confirm = state.value as? HomeStep.Confirm ?: return
         if (confirm.submitting) return
         state.value = confirm.copy(submitting = true)
-        runCatching { orders.reserve(confirm.quote.quickOrderId, idempotencyKey) }
+        try {
+            orders.reserve(confirm.quote.quickOrderId, idempotencyKey, expectedTotal = confirm.quote.total)
+        } catch (e: QuoteChangedException) {
+            // 예약 순간 품절·가격 변경: 새 조건으로 다시 확인받는다 (V02-SO·PC)
+            state.value = HomeStep.Confirm(e.quote)
+            return
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // 네트워크 오류 등은 같은 화면에 머물러 다시 누를 수 있게 한다 (같은 키라 주문은 한 건)
+        }
         state.value = (state.value as? HomeStep.Confirm)?.copy(submitting = false) ?: state.value
     }
 

@@ -17,3 +17,6 @@ data class Quote(
 
 /** Figma V02-SO·V02-PC·V02-CL */
 enum class QuoteIssue { SOLD_OUT, PRICE_CHANGED, STORE_CLOSED }
+
+/** 예약 순간에 품절·가격 변경으로 막혔다. 새 견적(issue 포함)으로 다시 확인받는다 (2차 기획 §7, 서버 409) */
+class QuoteChangedException(val quote: Quote) : IllegalStateException("예약 조건이 바뀌었습니다: ${quote.issue}")
