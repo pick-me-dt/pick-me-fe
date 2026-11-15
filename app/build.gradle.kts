@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -28,9 +29,26 @@ android {
         buildConfigField("String", "SERVER_URL", "\"$serverUrl\"")
     }
 
+    // release 서명 정보는 저장소 루트의 keystore.properties에 둔다 (git 제외)
+    // 키: storeFile(저장소 루트 기준 경로)·storePassword·keyAlias·keyPassword
+    // 파일이 없으면 release APK는 서명 없이 나온다 (app-release-unsigned.apk)
+    val releaseKeystore = rootProject.file("keystore.properties")
+    signingConfigs {
+        if (releaseKeystore.exists()) {
+            val props = Properties().apply { releaseKeystore.inputStream().use { load(it) } }
+            create("release") {
+                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
